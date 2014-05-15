@@ -269,7 +269,7 @@ class Appointments {
 			else
 				$min = 0; // No services ?? - Not possible but let's be safe
 		}
-		return $min;
+		return apply_filters('app-services-first_service_id', $min);
 	}
 
 	/**
@@ -4879,7 +4879,7 @@ SITE_NAME
 			//if ( !$this->locale_error ) wp_enqueue_script( 'jquery-datepick-local', $this->plugin_url . $file, array('jquery'), $this->version);
 			wp_enqueue_script( 'jquery-datepick-local', $this->plugin_url . $file, array('jquery'), $this->version);
 		}
-		if ( !@$this->options["disable_js_check_admin"] )
+		if ( empty($this->options["disable_js_check_admin"]) )
 			wp_enqueue_script( 'app-js-check', $this->plugin_url . '/js/js-check.js', array('jquery'), $this->version);
 
 		wp_enqueue_script("appointments-admin", $this->plugin_url . "/js/admin.js", array('jquery'), $this->version);
@@ -5389,6 +5389,7 @@ SITE_NAME
 							$result = true;
 					}
 					else {
+						if ((int)$this->db->get_var("SELECT COUNT(ID) FROM {$this->services_table}") >= 2) { add_action('admin_notices', array($this, 'reached_ceiling')); continue; }
 						$r = $wpdb->insert( $this->services_table,
 									array(
 										'ID'		=> $ID,
@@ -8790,6 +8791,10 @@ $(toggle_selected_export);
 				</tbody>
 			</table>
 		<?php
+	}
+
+	function reached_ceiling () {
+		echo '<div class="error below-h2"><p>' . __('You have reached the limit for the free version. <a href="http://premium.wpmudev.org/project/appointments-plus/">Upgrade to Appointments+ for unlimited services</a>', 'appointments') . '</p></div>';
 	}
 
 
