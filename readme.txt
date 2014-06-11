@@ -1,6 +1,6 @@
 === Appointments  ===
 Contributors: WPMUDEV
-Tags: appointments, bookings, services, business
+Tags: Appointment,Appointment Booking,Appointment Booking Calendar,Appointment Bookings,Appointment Bookings Calendar,Appointment Reservation,Appointment Reservations,Appointment Scheduling,Appointments,Beauty Salon,Book Appointment,Book Appointment,Booking,Booking calendar,Booking calendars,booking form,booking forms,Bookings,Bookings,Business,calendar,calendars,Hairdresser,Hairdressers,Kalender,online appointment booking,online appointment scheduler,Online Booking,online booking calendar,online booking software,online booking system,Online Bookings,online scheduling,Reservation,Salon,schedule,Schedule,schedule organizer,scheduling,Services,Website Booking,Website Bookings
 Requires at least: 3.7
 Tested up to: 3.9.1
 Stable tag: trunk
