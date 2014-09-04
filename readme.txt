@@ -2,7 +2,7 @@
 Contributors: WPMUDEV
 Tags: Appointment,Appointment Booking,Appointment Booking Calendar,Appointment Bookings,Appointment Bookings Calendar,Appointment Reservation,Appointment Reservations,Appointment Scheduling,Appointments,Beauty Salon,Book Appointment,Book Appointment,Booking,Booking calendar,Booking calendars,booking form,booking forms,Bookings,Bookings,Business,calendar,calendars,Hairdresser,Hairdressers,Kalender,online appointment booking,online appointment scheduler,Online Booking,online booking calendar,online booking software,online booking system,Online Bookings,online scheduling,Reservation, Reservation System, Restaurant, Schedule, Salon,schedule,Schedule,schedule organizer,scheduling,Services,Website Booking,Website Bookings, Paypal, MarketPress, Cart, 2Checkout, 2CO, Authorize.net, Authorize, AIM Checkout, Bitpay,  eWay Shared Payments, eWay Rapid 3.0 Payments, iDEAL, Manual Payments, Skrill, Moneybookers, PayPal Payflow Pro,  Paymill, PayPal Express Checkout, PIN, Simplify Commerce by MasterCard, Stripe, WePay
 Requires at least: 3.7
-Tested up to: 3.9.1
+Tested up to: 4.0
 Stable tag: trunk
 License: GPL2
 
