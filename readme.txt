@@ -1,8 +1,8 @@
 === Appointments  ===
-Contributors: WPMUDEV,WPMUDEV-Support1, WPMUDEV-Support2,WPMUDEV-Support4, WPMUDEV-Support6
+Contributors: WPMUDEV, WPMUDEV-Support1, WPMUDEV-Support2, WPMUDEV-Support4, WPMUDEV-Support6
 Tags: Appointment,Booking,Calendar,Reservation,Scheduling,google calendar,
 Requires at least: 3.7
-Tested up to: 4.0
+Tested up to: 4.1
 Stable tag: trunk
 License: GPL2
 
