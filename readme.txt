@@ -27,7 +27,7 @@ With Appointments:
 * You can schedule appointments with clients
 * Manage customer contact information
 * Collect payments or deposits using PayPal
-* Manage your entire team, create unlimited service providers and unlimited services
+* Manage your entire team, create service providers and services
 * Send confirmation and reminder emails to increase customer attendance rates
 * Allow you and your clients to book appointments up to one year in advance
 * Manage appointments using Google calendar
