@@ -1195,7 +1195,7 @@ class App_Shortcode_Services extends App_Shortcode {
 		$s .= $select;
 		$s .= '</div>';
 		$s .= '<div class="app_services_dropdown_select">';
-		$s .= '<select name="app_select_services" class="app_select_services">';
+		$s .= '<select name="app_select_services" class="app_select_services"' . ( max($services) < 2  ? 'disabled' : '' ) . '>';
 		if ( $services ) {
 			foreach ( $services as $service ) {
 				$service_description = '';
