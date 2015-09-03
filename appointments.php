@@ -5389,7 +5389,7 @@ SITE_NAME
 							$result = true;
 					}
 					else {
-						if ((int)$this->db->get_var("SELECT COUNT(ID) FROM {$this->services_table}") >= 2) { add_action('admin_notices', array($this, 'reached_ceiling')); continue; }
+						// if ((int)$this->db->get_var("SELECT COUNT(ID) FROM {$this->services_table}") >= 2) { add_action('admin_notices', array($this, 'reached_ceiling')); continue; }
 						$r = $wpdb->insert( $this->services_table,
 									array(
 										'ID'		=> $ID,
