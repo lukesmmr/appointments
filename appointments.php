@@ -2076,7 +2076,7 @@ class Appointments {
 		$script .= '$(".app_monthly_schedule_wrapper table td.free").click(function(){';
 		$script .= 'var selected_timetable=$(".app_timetable_"+$(this).find(".appointments_select_time").val());';
 		$script .= '$(".app_timetable:not(selected_timetable)").hide();';
-		$script .= 'selected_timetable.show("slow");';
+		$script .= 'selected_timetable.fadeIn("slow");';
 		$script .= '});';
 
 		$this->add2footer( $script );
