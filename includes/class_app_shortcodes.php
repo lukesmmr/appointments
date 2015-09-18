@@ -953,7 +953,7 @@ class App_Shortcode_MyAppointments extends App_Shortcode {
 			$colspan++;
 		}
 		if ( $a_cancel ) {
-			$ret .= '<th class="my-appointments-cancel">'. _x('Cancel', 'Discard existing info', 'appointments') . '</th>';
+			$ret .= '<th class="my-appointments-cancel">'. _x('Cancellation', 'Discard existing info', 'appointments') . '</th>';
 			$colspan++;
 		}
 		if ( $gcal && 'yes' == $appointments->options['gcal'] ) {
@@ -1005,7 +1005,8 @@ class App_Shortcode_MyAppointments extends App_Shortcode {
 					else
 						$is_readonly = ' readonly="readonly"';
 
-					$ret .= '<td><input class="app-my-appointments-cancel" type="checkbox" name="app_cancel['.$r->ID.']" '.$is_readonly.' /></td>';
+					//$ret .= '<td><input class="app-my-appointments-cancel" type="checkbox" name="app_cancel['.$r->ID.']" '.$is_readonly.' /></td>';
+					$ret .= '<td><button class="app-my-appointments-cancel btn btn-sm btn-danger" type="submit" name="app_cancel['.$r->ID.']" '.$is_readonly.'>Cancel</button></td>';
 				}
 
 				if ( $gcal && 'yes' == $appointments->options['gcal'] ) {
@@ -1063,8 +1064,7 @@ class App_Shortcode_MyAppointments extends App_Shortcode {
 				});
 				$("th.my-appointments-gcal,th.my-appointments-confirm,th.my-appointments-cancel").removeClass("header");
 
-				$(".app-my-appointments-cancel").change( function() {
-					if ( $(this).is(":checked") ) {
+				$(".app-my-appointments-cancel").on("click", function() {
 						var cancel_box = $(this);
 						if ( !confirm("'. esc_js( __("Are you sure to cancel the selected appointment?","appointments") ) .'") ) {
 							cancel_box.attr("checked", false);
@@ -1091,7 +1091,7 @@ class App_Shortcode_MyAppointments extends App_Shortcode {
 								}, "json");
 							}
 						}
-					}
+					
 
 				});'
 			);
