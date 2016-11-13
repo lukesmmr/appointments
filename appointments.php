@@ -696,7 +696,6 @@ class Appointments {
 					$user_name = $userdata->user_login;
 				else
 					$user_name = $userdata->display_name;
-
 				if ( !$user_name )
 					$user_name = $userdata->first_name . " " . $userdata->last_name;
 				if ( "" == trim( $user_name ) )
@@ -1978,10 +1977,20 @@ class Appointments {
 		$tbl_class = $class;
 		$tbl_class = $tbl_class ? "class='{$tbl_class}'" : '';
 
+		$todays_no = date("w", $this->local_time ); // Number of today
+		$working_days = $this->get_working_days( $this->worker, $this->location ); // Get an array of working days
+		$capacity = $this->get_capacity();
+		$time_table = '';
+		$startdate=$this->get_exception( $this->location, $this->worker, 'start_date' );
+		$enddate=$this->get_exception( $this->location, $this->worker, 'end_date' );
+		$disabled=$this->get_exception( $this->location, $this->worker, 'disabled' );
+
 		$ret = '';
 		$ret .= '<div class="app_monthly_schedule_wrapper">';
 
 		$ret .= '<a id="app_schedule">&nbsp;</a>';
+		if (isset( $disabled->days ) )
+			$ret .= '<div class="disabled-warning alert alert-danger">This service is currently disabled.</div>';
 		$ret  = apply_filters( 'app_monthly_schedule_before_table', $ret );
 		$ret .= "<table width='100%' {$tbl_class}>";
 		$ret .= $this->_get_table_meta_row_monthly('thead', $long);
@@ -1996,23 +2005,29 @@ class Appointments {
 		else
 			$ret .= '<tr>';
 
-		$todays_no = date("w", $this->local_time ); // Number of today
-		$working_days = $this->get_working_days( $this->worker, $this->location ); // Get an array of working days
-		$capacity = $this->get_capacity();
-		$time_table = '';
-
 		for ($i=1; $i<=$days; $i++) {
 			$date = date('Y-m-' . sprintf("%02d", $i), $time);
 			$dow = (int)date('w', strtotime($date));
 			$ccs = strtotime("{$date} 00:00");
 			$cce = strtotime("{$date} 23:59");
+			$cce_day_after = strtotime("{$date} 23:59") - 86400;
+
 			if ($this->start_of_week == $dow)
 				$ret .= '</tr><tr>';
 
 			$class_name = '';
-			// First mark passed days
-			if ( $this->local_time > $cce )
+			// First check if service provider was disabled
+			if ( isset($disabled->days) )
+				$class_name = 'notpossible app_disabled';
+			// Then mark passed days
+			else if ( $this->local_time > $cce )
 				$class_name = 'notpossible app_past';
+			// then set after start date
+			else if ( strtotime($startdate->days) >= $cce  )
+				$class_name = 'notpossible app_before_start_date';
+			// then set before end date
+			else if ( strtotime($enddate->days) <= $cce_day_after )
+				$class_name = 'notpossible app_after_end_date';
 			// Then check if this time is blocked
 			else if ( isset( $this->options["app_lower_limit"] ) && $this->options["app_lower_limit"]
 				&&( $this->local_time + $this->options["app_lower_limit"] * 3600) > $cce )
@@ -3332,7 +3347,7 @@ $gcal_description = __("Client Name: CLIENT\nService Name: SERVICE\nService Prov
 		if ( isset($this->options["allow_worker_wh"]) && 'yes' == $this->options["allow_worker_wh"] && isset( $_POST['open'] ) && isset( $_POST['closed'] ) ) {
 			$result = $result2 = false;
 			$location = 0;
-			foreach ( array( 'closed', 'open' ) as $stat ) {
+			foreach ( array( 'closed', 'open', 'start_date', 'end_date', 'disabled' ) as $stat ) {
 				$count = $wpdb->get_var($wpdb->prepare(
 					"SELECT COUNT(*) FROM {$this->wh_table} WHERE location=%d AND worker=%d AND status=%s",
 					$location, $profileuser_id, $stat
@@ -5328,7 +5343,8 @@ SITE_NAME
 		// Save Exceptions
 		if ( isset($_POST["action_app"]) && 'save_exceptions' == $_POST["action_app"] ) {
 			$location = (int)$_POST['location'];
-			foreach ( array( 'closed', 'open' ) as $stat ) {
+			foreach ( array( 'closed', 'open', 'start_date', 'end_date', 'disabled') as $stat ) {
+
 				$count = $wpdb->get_var($wpdb->prepare(
 					"SELECT COUNT(*) FROM {$this->exceptions_table} WHERE location=%d AND worker=%d AND status=%s",
 					$location, $this->worker, $stat
@@ -6776,7 +6792,7 @@ PLACEHOLDER
 						$s = " selected='selected'";
 					else
 						$s = '';
-					echo '<option value="'.$worker->ID.'"'.$s.'>' . $this->get_worker_name( $worker->ID, false ) . '</option>';
+					echo '<option value="'.$worker->ID.'"'.$s.'>' . $this->get_worker_name( $worker->ID, true ) . '</option>';
 				}
 			}
 			?>
@@ -6821,7 +6837,7 @@ PLACEHOLDER
 			<br />
 			<?php
 			$result = array();
-			foreach ( array( 'open', 'closed' ) as $stat ) {
+			foreach ( array( 'open', 'closed', 'start_date', 'end_date', 'disabled' ) as $stat ) {
 				$result[$stat] = $wpdb->get_var($wpdb->prepare("SELECT days FROM {$this->exceptions_table} WHERE status=%s AND worker=%d", $stat, $this->worker));
 			}
 			$workers = $this->get_workers();
@@ -6837,7 +6853,7 @@ PLACEHOLDER
 						$s = " selected='selected'";
 					else
 						$s = '';
-					echo '<option value="'.$worker->ID.'"'.$s.'>' . $this->get_worker_name( $worker->ID, false ) . '</option>';
+					echo '<option value="'.$worker->ID.'"'.$s.'>' . $this->get_worker_name( $worker->ID, true ) . '</option>';
 				}
 			}
 			?>
@@ -6845,9 +6861,38 @@ PLACEHOLDER
 			<br /><br />
 			<form method="post" action="" >
 				<table class="widefat fixed">
+
 				<tr>
 				<td>
-				<?php _e( 'Exceptional working days, e.g. a specific Sunday you decided to work:', 'appointments') ?>
+				<p><h3><?php _e( 'Set service period date range', 'appointments') ?></h3>
+				<strong><?php _e( 'Setting start and end dates will only allow bookings in date range, which includes the selected date.', 'appointments'); ?></strong><br> <?php _e( 'The date limiters will overwrite any exceptional days before or after the date rangem, for example, you can not add an exceptional working day after the end date.', 'appointments') ?></p>
+				</td>
+				</tr>
+				<tr>
+				<td>
+				<label>Start service: </label>
+				<input class="datepick" style="margin-right: 25px; min-width: 200px;" id="start_closed_datepick" type="text" name="start_date[exceptional_days]" value="<?php if (isset($result["start_date"])) echo $result["start_date"]?>" />
+				<label>End service: </label>
+				<input class="datepick" style="min-width: 200px;" id="end_closed_datepick" type="text" name="end_date[exceptional_days]" value="<?php if (isset($result["end_date"])) echo $result["end_date"]?>" />
+				</td>
+				</tr>
+
+				<tr>
+				<td>
+				<h3><?php _e( 'Disable service provider', 'appointments') ?></h3>
+				<?php _e( 'If checked, all other date settings will be ignored and bookings fully disabled for service provider', 'appointments') ?>
+				</td>
+				</tr>
+				<tr>
+				<td>
+				<input class="disabled_service" id="disabled_service" type="checkbox" name="disabled[exceptional_days]" value="1"  <?php if ( isset( $result['disabled'] ) ) echo 'checked="checked"' ?>/> <label for="disabled_service"><?php _e( 'Disable service provider', 'appointments') ?></label>
+				</td>
+				</tr>
+
+				<tr>
+				<td>
+				<h3><?php _e( 'Exceptional working days during service period', 'appointments') ?></h3>
+				<?php _e( 'E.g. a specific Sunday you decided to work:', 'appointments') ?>
 				</td>
 				</tr>
 				<tr>
@@ -6858,7 +6903,8 @@ PLACEHOLDER
 
 				<tr>
 				<td>
-				<?php _e( 'Exceptional NON working days, e.g. holidays:', 'appointments') ?>
+				<h3><?php _e( 'Exceptional NON working days during service period ', 'appointments') ?></h3>
+				<?php _e( 'E.g. Public holidays or other interruptions', 'appointments') ?>
 				</td>
 				</tr>
 				<tr>
@@ -6866,19 +6912,20 @@ PLACEHOLDER
 				<input class="datepick" id="closed_datepick" type="text" style="width:100%" name="closed[exceptional_days]" value="<?php if (isset($result["closed"])) echo $result["closed"]?>" />
 				</td>
 				</tr>
-
 				<tr>
 				<td>
 				<span class="description"><?php _e('Please enter each date using YYYY-MM-DD format (e.g. 2012-08-13) and separate each day with a comma. Datepick will allow entering multiple dates. ', 'appointments')?></span>
+				<br><br>
 				</td>
 				</tr>
+
 				</table>
 
 				<input type="hidden" name="location" value="0" />
 				<input type="hidden" name="action_app" value="save_exceptions" />
 				<?php wp_nonce_field( 'update_app_settings', 'app_nonce' ); ?>
 				<p class="submit">
-				<input type="submit" class="button-primary" value="<?php _e('Save Exceptional Days', 'appointments') ?>" />
+				<input type="submit" class="button-primary" value="<?php _e('Save Service Period', 'appointments') ?>" />
 				</p>
 
 			</form>
@@ -6890,6 +6937,8 @@ PLACEHOLDER
 				});
 				$("#open_datepick").datepick({dateFormat: 'yyyy-mm-dd',multiSelect: 999, monthsToShow: 2});
 				$("#closed_datepick").datepick({dateFormat: 'yyyy-mm-dd',multiSelect: 999, monthsToShow: 2});
+				$("#start_closed_datepick").datepick({dateFormat: 'yyyy-mm-dd', monthsToShow: 1});
+				$("#end_closed_datepick").datepick({dateFormat: 'yyyy-mm-dd', monthsToShow: 1});
 			});
 			</script>
 
