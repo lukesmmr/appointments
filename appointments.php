@@ -1983,14 +1983,27 @@ class Appointments {
 		$time_table = '';
 		$startdate=$this->get_exception( $this->location, $this->worker, 'start_date' );
 		$enddate=$this->get_exception( $this->location, $this->worker, 'end_date' );
+		$enableddate=$this->get_exception( $this->location, $this->worker, 'enabled_date' );
 		$disabled=$this->get_exception( $this->location, $this->worker, 'disabled' );
 
 		$ret = '';
+		// output warning if the service is disabled
+		if (isset( $disabled->days ) )
+			$ret .= '<div class="disabled-warning alert alert-warning">This service is currently not available.</div>';
+		// output warning if no service provider is assigned
+		if( isset($this->worker) && $this->worker == 0 )
+			$ret .= '<div class="disabled-warning alert alert-danger">No service provider assigned.</div>';
+		// output availability range warning
+		if (isset( $enableddate->days ) )
+			if ( strtotime($enableddate->days) > time() )
+				if ( strtotime($startdate->days) != '' && strtotime($enddate->days) != '' )
+					$ret .= '<div class="disabled-warning alert alert-warning">This service will be available for bookings on '. date("d/m/Y",strtotime($enableddate->days)) .' for the date range: <strong>'. date("d/m/Y",strtotime($startdate->days)) . ' - ' . date("d/m/Y",strtotime($enddate->days)) .'</strong>.</div>';
+				else
+					$ret .= '<div class="disabled-warning alert alert-warning">This service will become available for bookings on '. date("d/m/Y",strtotime($enableddate->days)) .'.</div>';
 		$ret .= '<div class="app_monthly_schedule_wrapper">';
 
 		$ret .= '<a id="app_schedule">&nbsp;</a>';
-		if (isset( $disabled->days ) )
-			$ret .= '<div class="disabled-warning alert alert-danger">This service is currently disabled.</div>';
+
 		$ret  = apply_filters( 'app_monthly_schedule_before_table', $ret );
 		$ret .= "<table width='100%' {$tbl_class}>";
 		$ret .= $this->_get_table_meta_row_monthly('thead', $long);
@@ -2016,17 +2029,21 @@ class Appointments {
 				$ret .= '</tr><tr>';
 
 			$class_name = '';
+
 			// First check if service provider was disabled
 			if ( isset($disabled->days) )
+				$class_name = 'notpossible app_disabled';
+			// only allow bookings from now matches the date set for bookings to commence
+			else if ( strtotime($enableddate->days) != '' && strtotime($enableddate->days) >= time() )
 				$class_name = 'notpossible app_disabled';
 			// Then mark passed days
 			else if ( $this->local_time > $cce )
 				$class_name = 'notpossible app_past';
 			// then set after start date
-			else if ( strtotime($startdate->days) >= $cce  )
+			else if ( strtotime($startdate->days) != '' && strtotime($startdate->days) >= $cce  )
 				$class_name = 'notpossible app_before_start_date';
 			// then set before end date
-			else if ( strtotime($enddate->days) <= $cce_day_after )
+			else if ( strtotime($enddate->days) != '' && strtotime($enddate->days) <= $cce_day_after )
 				$class_name = 'notpossible app_after_end_date';
 			// Then check if this time is blocked
 			else if ( isset( $this->options["app_lower_limit"] ) && $this->options["app_lower_limit"]
@@ -2236,6 +2253,9 @@ class Appointments {
 			// Then check if we have enough time to fulfill this app
 			else if ( !$this->is_service_possible( $ccs, $cce, $capacity ) )
 				$class_name = 'notpossible service_notpossible';
+			// Then check if user already has booking the same day
+			else if ( !$this->has_same_day_booking( $ccs, $cce, $this->worker) )
+				$class_name = 'notpossible service_has_sameday_booking';
 			// If nothing else, then it must be free
 			else {
 				$class_name = 'free';
@@ -2596,6 +2616,30 @@ class Appointments {
 			return false;
 
 		return true;
+	}
+
+	/**
+	 * Check if a user already has a booking that same day
+	 * @return bool
+	 * @since 1.2.2
+	 */
+	function has_same_day_booking( $ccs, $cse, $worker ) {
+		global $wpdb;
+		// Let's be safe
+		if ( !method_exists( $wpdb, 'get_blog_prefix' ) )
+			return;
+		$prefix = $wpdb->get_blog_prefix( $blog_id );
+		if ( !$prefix )
+			return;
+		$user = wp_get_current_user();
+    foreach( $wpdb->get_results( 'SELECT * FROM '.$prefix.'app_appointments WHERE worker = '.$worker.' AND user = '.$user->ID) as $key => $result) {
+			// check if there's an appointment on the given booking day
+			if ( date('m/d/Y', $ccs) ==  date('m/d/Y', strtotime($result->start)) ) {
+				return false;
+			}
+		}
+		return true;
+
 	}
 
 	/**
@@ -3344,10 +3388,10 @@ $gcal_description = __("Client Name: CLIENT\nService Name: SERVICE\nService Prov
 
 		// Save working hours table
 		// Do not save these if we are coming from BuddyPress confirmation tab
-		if ( isset($this->options["allow_worker_wh"]) && 'yes' == $this->options["allow_worker_wh"] && isset( $_POST['open'] ) && isset( $_POST['closed'] ) ) {
+		if ( isset($this->options["allow_worker_wh"]) && 'yes' == $this->options["allow_worker_wh"] && isset( $_POST['open'] ) && isset( $_POST['closed'] ) && isset( $_POST['start_date'] ) && isset( $_POST['end_date'] ) && isset( $_POST['disabled'] ) && isset( $_POST['enabled_date'] ) ) {
 			$result = $result2 = false;
 			$location = 0;
-			foreach ( array( 'closed', 'open', 'start_date', 'end_date', 'disabled' ) as $stat ) {
+			foreach ( array( 'closed', 'open', 'start_date', 'end_date', 'disabled', 'enabled_date' ) as $stat ) {
 				$count = $wpdb->get_var($wpdb->prepare(
 					"SELECT COUNT(*) FROM {$this->wh_table} WHERE location=%d AND worker=%d AND status=%s",
 					$location, $profileuser_id, $stat
@@ -3363,7 +3407,7 @@ $gcal_description = __("Client Name: CLIENT\nService Name: SERVICE\nService Prov
 				}
 				else {
 					$result = $wpdb->insert( $this->wh_table,
-						array( 'location'=>$location, 'worker'=>$profileuser_id, 'hours'=>serialize($_POST[$stat]), 'status'=>$stat ),
+						array( 'location'=>$location, 'worker'=>$profileuser_id, 'hours'=>serialize($_POST[$stat]), 'status'=>$stat),
 						array( '%d', '%d', '%s', '%s' )
 						);
 				}
@@ -3382,7 +3426,7 @@ $gcal_description = __("Client Name: CLIENT\nService Name: SERVICE\nService Prov
 						array(
 							'location'	=> $location,
 							'worker'	=> $profileuser_id,
-							'status'	=> $stat ),
+							'status'	=> $stat),
 						array( '%s', '%s' ),
 						array( '%d', '%d', '%s' )
 					);
@@ -5343,7 +5387,7 @@ SITE_NAME
 		// Save Exceptions
 		if ( isset($_POST["action_app"]) && 'save_exceptions' == $_POST["action_app"] ) {
 			$location = (int)$_POST['location'];
-			foreach ( array( 'closed', 'open', 'start_date', 'end_date', 'disabled') as $stat ) {
+			foreach ( array( 'closed', 'open', 'start_date', 'end_date', 'disabled', 'enabled_date') as $stat ) {
 
 				$count = $wpdb->get_var($wpdb->prepare(
 					"SELECT COUNT(*) FROM {$this->exceptions_table} WHERE location=%d AND worker=%d AND status=%s",
@@ -6837,7 +6881,7 @@ PLACEHOLDER
 			<br />
 			<?php
 			$result = array();
-			foreach ( array( 'open', 'closed', 'start_date', 'end_date', 'disabled' ) as $stat ) {
+			foreach ( array( 'open', 'closed', 'start_date', 'end_date', 'disabled', 'enabled_date' ) as $stat ) {
 				$result[$stat] = $wpdb->get_var($wpdb->prepare("SELECT days FROM {$this->exceptions_table} WHERE status=%s AND worker=%d", $stat, $this->worker));
 			}
 			$workers = $this->get_workers();
@@ -6877,10 +6921,24 @@ PLACEHOLDER
 				</td>
 				</tr>
 
+
+				<tr>
+				<td>
+				<p><h3><?php _e( 'Enable service provider', 'appointments') ?></h3>
+				<strong><?php _e( 'Set a date to enable your service provider bookings.', 'appointments'); ?></strong><br> <?php _e( 'E.g. You want the services only to be bookable from a specific date while booking availability is restricted to start and end dates.', 'appointments') ?></p>
+				</td>
+				</tr>
+				<tr>
+				<td>
+				<label>Enable service: </label>
+				<input class="datepick" style="margin-right: 25px; min-width: 200px;" id="enabled_datepick" type="text" name="enabled_date[exceptional_days]" value="<?php if (isset($result["enabled_date"])) echo $result["enabled_date"]?>" />
+				</td>
+				</tr>
+
 				<tr>
 				<td>
 				<h3><?php _e( 'Disable service provider', 'appointments') ?></h3>
-				<?php _e( 'If checked, all other date settings will be ignored and bookings fully disabled for service provider', 'appointments') ?>
+				<?php _e( 'If checked, all other date settings will be ignored and bookings fully disabled for service provider.', 'appointments') ?> <br><span style="color: red;"><strong><?php _e('Caution: disabling a service provider will fully disable bookings on all attached services, even if those are assigned to multiple services providers.', 'appointments')?></strong></span>
 				</td>
 				</tr>
 				<tr>
@@ -6939,6 +6997,7 @@ PLACEHOLDER
 				$("#closed_datepick").datepick({dateFormat: 'yyyy-mm-dd',multiSelect: 999, monthsToShow: 2});
 				$("#start_closed_datepick").datepick({dateFormat: 'yyyy-mm-dd', monthsToShow: 1});
 				$("#end_closed_datepick").datepick({dateFormat: 'yyyy-mm-dd', monthsToShow: 1});
+				$("#enabled_datepick").datepick({dateFormat: 'yyyy-mm-dd', monthsToShow: 1});
 			});
 			</script>
 
@@ -7215,6 +7274,11 @@ PLACEHOLDER
 	 *  @param worker: Worker object that will be displayed (only when php is true)
 	 */
 	function add_worker( $php=false, $worker='' ) {
+
+		// This gets the array of ids of the subscribers
+		$sp_user_query = get_users( array( 'role' => 'service_provider' ) );
+		$sp_user_role_ids = wp_list_pluck( $sp_user_query, 'ID' );
+
 		if ( $php ) {
 			if ( is_object($worker)) {
 				$k = $worker->ID;
@@ -7223,7 +7287,8 @@ PLACEHOLDER
 				else
 					$dummy = "";
 				$price = $worker->price;
-				$workers = wp_dropdown_users( array( 'echo'=>0, 'show'=>'user_login', 'selected' => $worker->ID, 'name'=>'workers['.$k.'][user]', 'exclude'=>apply_filters('app_filter_providers', null) ) );
+
+				$workers = wp_dropdown_users( array( 'echo'=>0, 'show'=>'display_name', 'selected' => $worker->ID, 'name'=>'workers['.$k.'][user]', 'include'=> $sp_user_role_ids ) );
 			}
 			 else return;
 		}
@@ -7231,7 +7296,7 @@ PLACEHOLDER
 			$k = "'+k+'";
 			$price = '';
 			$dummy = '';
-			$workers =str_replace( array("\t","\n","\r"), "", str_replace( array("'", "&#039;"), array('"', "'"), wp_dropdown_users( array ( 'echo'=>0, 'show'=>'user_login', 'include'=>0, 'name'=>'workers['.$k.'][user]', 'exclude'=>apply_filters('app_filter_providers', null)) ) ) );
+			$workers =str_replace( array("\t","\n","\r"), "", str_replace( array("'", "&#039;"), array('"', "'"), wp_dropdown_users( array ( 'echo'=>0, 'show'=>'display_name', 'include'=>0, 'name'=>'workers['.$k.'][user]', 'include'=> $sp_user_role_ids ) ) ) );
 		}
 		global $wpdb;
 
@@ -8377,7 +8442,7 @@ $(toggle_selected_export);
 				}
 				else
 					$sel = '';
-				$html .= '<option value="'.$worker->ID.'"'.$sel.'>'. $this->get_worker_name( $worker->ID, false ) . '</option>';
+				$html .= '<option value="'.$worker->ID.'"'.$sel.'>'. $this->get_worker_name( $worker->ID, true ) . '</option>';
 			}
 		}
 		$html .= '</select>';
