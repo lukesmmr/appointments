@@ -2633,8 +2633,8 @@ class Appointments {
 			return;
 		$user = wp_get_current_user();
     foreach( $wpdb->get_results( 'SELECT * FROM '.$prefix.'app_appointments WHERE worker = '.$worker.' AND user = '.$user->ID) as $key => $result) {
-			// check if there's an appointment on the given booking day
-			if ( date('m/d/Y', $ccs) ==  date('m/d/Y', strtotime($result->start)) ) {
+			// check if there's a pending or confirmed appointment on the given booking day
+			if ( date('m/d/Y', $ccs) == date('m/d/Y', strtotime($result->start) ) && $result->status != 'removed' ) {
 				return false;
 			}
 		}
