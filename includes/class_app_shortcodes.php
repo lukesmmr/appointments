@@ -390,7 +390,7 @@ class App_Shortcode_MonthlySchedule extends App_Shortcode {
 				'example' => __('Our schedule for START', 'appointments'),
 			),
 			'logged' => array(
-				'value' => __('Click a free day to apply for an appointment.', 'appointments'),
+				'value' => __('Click a free day to apply for an appointment (limited to 1 appointment per day).', 'appointments'),
 				'help' => __('Text that will be displayed after the title only to the clients who are logged in or you don\'t require a login.', 'appointments'),
 				'example' => __('Click a free day to apply for an appointment.', 'appointments'),
 			),
