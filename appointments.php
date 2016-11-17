@@ -1997,7 +1997,7 @@ class Appointments {
 		if (isset( $enableddate->days ) )
 			if ( strtotime($enableddate->days) > time() )
 				if ( strtotime($startdate->days) != '' && strtotime($enddate->days) != '' )
-					$ret .= '<div class="disabled-warning alert alert-warning">This service will be available for bookings on '. date("d/m/Y",strtotime($enableddate->days)) .' for the date range: <strong>'. date("d/m/Y",strtotime($startdate->days)) . ' - ' . date("d/m/Y",strtotime($enddate->days)) .'</strong>.</div>';
+					$ret .= '<div class="disabled-warning alert alert-warning">Bookings for '. date("F",strtotime($startdate->days)) . ' open on <strong>'. date("d/m/Y",strtotime($enableddate->days)) . '</strong></div>';
 				else
 					$ret .= '<div class="disabled-warning alert alert-warning">This service will become available for bookings on '. date("d/m/Y",strtotime($enableddate->days)) .'.</div>';
 		$ret .= '<div class="app_monthly_schedule_wrapper">';
