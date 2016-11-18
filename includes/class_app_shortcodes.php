@@ -1222,17 +1222,20 @@ class App_Shortcode_Services extends App_Shortcode {
 		$s .= '<div class="app_services_dropdown_select">';
 		// disable select if there's only one service
 		$s .= '<select name="app_select_services" class="app_select_services"' . ( count($services) < 2  ? 'disabled' : '' ) . '>';
+		$s .= '<option selected disabled>Select service...</option>';
 		if ( $services ) {
 			foreach ( $services as $service ) {
 				$service_description = '';
 				// Check if this is the first service, so it would be displayed by default
-				if ( $service->ID == $appointments->service ) {
-					$d = '';
-					$sel = ' selected="selected"';
-				}
-				else {
-					$d = ' style="display:none"';
-					$sel = '';
+				if ( isset( $_GET['app_service_id']) ) {
+					if ( $service->ID == $appointments->service ) {
+						$d = '';
+						$sel = ' selected="selected"';
+					}
+					else {
+						$d = ' style="display:none"';
+						$sel = '';
+					}
 				}
 
 				// comprare service IDs to previously built start date array. If service is not assigned a service provider, it won't show in the list.
