@@ -7103,6 +7103,7 @@ PLACEHOLDER
 				uncheckAllText:'<?php echo esc_js( __('Uncheck all', 'appointments' )) ?>',
 				selectedText:'<?php echo esc_js( __('# selected', 'appointments' )) ?>',
 				selectedList:5,
+				multiple: false,
 				position: {
 				  my: 'left bottom',
 				  at: 'left top'
