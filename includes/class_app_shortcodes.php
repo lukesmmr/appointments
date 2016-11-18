@@ -1185,6 +1185,31 @@ class App_Shortcode_Services extends App_Shortcode {
 		if ( !$services || empty( $services ) )
 			return;
 
+		/*
+		MODIFICATIONS / @lukesmmr Nov2016
+		build array with workers, services and service start dates to buil wcalendar url call for loading the calendar in the correct month when the service provider allows bookings for.
+		might break the app if multiple services are assigned to the same worker/service provider
+		*/
+		$workers = $appointments->get_workers( $order_by );
+		if ( $workers ) {
+			$service_work_startdate_arr = array();
+			foreach ($workers as $worker) {
+				$services_by_worker = $worker->services_provided;
+				$service_id_arr = explode(':', $services_by_worker);
+
+				$worker_id = $worker->ID;
+				$get_worker_start_date = $appointments->get_exception(null, $worker->ID, 'start_date' );
+				$worker_service_id = $service_id_arr[1];
+				$worker_start_date_unix = strtotime($get_worker_start_date->days);
+				$service_work_startdate_arr[] = array(
+			    'worker' => $worker_id,
+			    'service_id' => $worker_service_id,
+			    'service_start_date' => $worker_start_date_unix,
+			  );
+			}
+			// print_r($service_work_startdate_arr);
+		}
+
 		$script ='';
 		$s = '';
 		$e = '';
@@ -1209,8 +1234,15 @@ class App_Shortcode_Services extends App_Shortcode {
 					$d = ' style="display:none"';
 					$sel = '';
 				}
+
+				// comprare service IDs to previously built start date array. If service is not assigned a service provider, it won't show in the list.
+				foreach ($service_work_startdate_arr as $service_worker_date_item) {
+					if ($service->ID == $service_worker_date_item['service_id']) {
+						$s .= '<option data-start-date="'. $service_worker_date_item['service_start_date'] .'" value="'.$service->ID.'"'.$sel.'>'. stripslashes( $service->name ) . '</option>';
+					}
+					// $s .= '<option value="'.$service->ID.'"'.$sel.'>'. stripslashes( $service->name ) . '</option>';
+				}
 				// Add options
-				$s .= '<option value="'.$service->ID.'"'.$sel.'>'. stripslashes( $service->name ) . '</option>';
 				// Include excerpts
 				$e .= '<div '.$d.' class="app_service_excerpt" id="app_service_excerpt_'.$service->ID.'" >';
 				// Let addons modify service page
@@ -1244,7 +1276,6 @@ class App_Shortcode_Services extends App_Shortcode {
 		if ( $autorefresh ) {
 			$script .= "$('.app_services_button').hide();";
 		}
-
 		$script .= "$('.app_select_services').change(function(){";
 		$script .= "var selected_service=$('.app_select_services option:selected').val();";
 		$script .= "if (typeof selected_service=='undefined' || selected_service===null){";
@@ -1259,7 +1290,12 @@ class App_Shortcode_Services extends App_Shortcode {
 
 		$script .= "$('.app_services_button').click(function(){";
 		$script .= "var selected_service=$('.app_select_services option:selected').val();";
+		$script .= "var selected_service_start_date=$('.app_select_services option:selected').data('start-date');";
+		$script .= "if (selected_service_start_date != ''){";
+		$script .= "window.location.href='".$href." + '&wcalendar='+ selected_service_start_date;";
+		$script .= "} else {";
 		$script .= "window.location.href='".$href.";";
+		$script .= "}";
 		$script .= "});";
 
 		if (!$_noscript) $appointments->add2footer( $script );
