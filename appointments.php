@@ -1184,6 +1184,7 @@ class Appointments {
 						'email'		=> __('Email', 'appointments'),
 						'phone'		=> __('Phone', 'appointments'),
 						'address'	=> __('Address', 'appointments'),
+						'organisation'	=> __('Organisation', 'appointments'),
 						'city'		=> __('City', 'appointments'),
 						'note'		=> __('Note', 'appointments')
 					);
@@ -1403,7 +1404,7 @@ class Appointments {
 		$service_obj = $this->get_service( $service );
 		$service = '<label><span>'. __('Service name: ', 'appointments' ).  '</span>'. apply_filters( 'app_confirmation_service', stripslashes( $service_obj->name ), $service_obj->name ) . '</label>';
 		$start = '<label><span>'.__('Date and time: ', 'appointments' ). '</span>'. apply_filters( 'app_confirmation_start', date_i18n( $this->datetime_format, $start ), $start ) . '</label>';
-		$end = '<label><span>'.__('Lasts (approx): ', 'appointments' ). '</span>'. apply_filters( 'app_confirmation_lasts', $service_obj->duration . " ". __('minutes', 'appointments'), $service_obj->duration ) . '</label>';
+		$end = '<label><span>'.__('Allocated time: ', 'appointments' ). '</span>'. apply_filters( 'app_confirmation_lasts', $service_obj->duration . " ". __('minutes', 'appointments'), $service_obj->duration ) . '</label>';
 		if ( $price > 0 )
 			$price = '<label><span>'.__('Price: ', 'appointments' ).  '</span>'. apply_filters( 'app_confirmation_price', $price . " " . $this->options["currency"], $price ) . '</label>';
 		else
@@ -1434,6 +1435,11 @@ class Appointments {
 		else
 			$ask_address = "";
 
+		if ( $this->options["ask_organisation"] )
+			$ask_organisation = "ask";
+		else
+			$ask_organisation = "";
+
 		if ( $this->options["ask_city"] )
 			$ask_city = "ask";
 		else
@@ -1459,6 +1465,7 @@ class Appointments {
 							'email'		=> $ask_email,
 							'phone'		=> $ask_phone,
 							'address'	=> $ask_address,
+							'organisation'	=> $ask_organisation,
 							'city'		=> $ask_city,
 							'note'		=> $ask_note,
 							'gcal'		=> $ask_gcal
@@ -1572,6 +1579,15 @@ class Appointments {
 		if ( !$address_check )
 			$this->json_die( 'address' );
 
+		if ( isset( $_POST["app_organisation"] ) )
+			$organisation = sanitize_text_field( $_POST["app_organisation"] );
+		else
+			$organisation = '';
+
+		$organisation_check = apply_filters( "app_organisation_check", true, $organisation );
+		if ( !$organisation_check )
+			$this->json_die( 'organisation' );
+
 		if ( isset( $_POST["app_city"] ) )
 			$city = sanitize_text_field( $_POST["app_city"] );
 		else
@@ -1618,6 +1634,7 @@ class Appointments {
 								'email'		=>	$email,
 								'phone'		=>	$phone,
 								'address'	=>	$address,
+								'organisation'	=>	$organisation,
 								'city'		=>	$city,
 								'location'	=>	$location,
 								'service'	=>	$service,
@@ -1636,7 +1653,7 @@ class Appointments {
 		// A new appointment is accepted, so clear cache
 		$insert_id = $wpdb->insert_id; // Save insert ID
 		$this->flush_cache();
-		$this->save_cookie( $insert_id, $name, $email, $phone, $address, $city, $gcal );
+		$this->save_cookie( $insert_id, $name, $email, $phone, $address, $organisation, $city, $gcal );
 		do_action( 'app_new_appointment', $insert_id );
 
 		// Send confirmation for pending, payment not required cases, if selected so
@@ -1994,7 +2011,7 @@ class Appointments {
 		if( isset($this->worker) && $this->worker == 0 )
 			$ret .= '<div class="disabled-warning alert alert-danger">No service provider assigned.</div>';
 		// output availability range warning
-		if (isset( $enableddate->days ) )
+		if (isset( $enableddate->days ) && isset( $_GET["wcalendar"] ) )
 			if ( strtotime($enableddate->days) > time() )
 				if ( strtotime($startdate->days) != '' && strtotime($enddate->days) != '' )
 					$ret .= '<div class="disabled-warning alert alert-warning">Bookings for '. date("F",strtotime($startdate->days)) . ' open on <strong>'. date("d/m/Y",strtotime($enableddate->days)) . '</strong></div>';
@@ -3018,7 +3035,7 @@ if ($this->worker && $this->service && ($app->service != $this->service)) {
 	/**
 	 * Save a cookie so that user can see his appointments
 	 */
-	function save_cookie( $app_id, $name, $email, $phone, $address, $city, $gcal ) {
+	function save_cookie( $app_id, $name, $email, $phone, $address, $organisation, $city, $gcal ) {
 		if ( isset( $_COOKIE["wpmudev_appointments"] ) )
 			$apps = unserialize( stripslashes( $_COOKIE["wpmudev_appointments"] ) );
 		else
@@ -3045,6 +3062,7 @@ if ($this->worker && $this->service && ($app->service != $this->service)) {
 					"e"	=> $email,
 					"p"	=> $phone,
 					"a"	=> $address,
+					"o"	=> $organisation,
 					"c"	=> $city,
 					"g"	=> $gcal
 					);
@@ -3064,10 +3082,12 @@ if ($this->worker && $this->service && ($app->service != $this->service)) {
 				update_user_meta( $current_user->ID, 'app_phone', $phone );
 			if ( $address )
 				update_user_meta( $current_user->ID, 'app_address', $address );
+			if ( $organisation )
+				update_user_meta( $current_user->ID, 'app_organisation', $organisation );
 			if ( $city )
 				update_user_meta( $current_user->ID, 'app_city', $city );
 
-			do_action( 'app_save_user_meta', $current_user->ID, array( 'name'=>$name, 'email'=>$email, 'phone'=>$phone, 'address'=>$address, 'city'=>$city ) );
+			do_action( 'app_save_user_meta', $current_user->ID, array( 'name'=>$name, 'email'=>$email, 'phone'=>$phone, 'address'=>$address, 'organisation'=>$organisation, 'city'=>$city ) );
 		}
 	}
 
@@ -3332,6 +3352,8 @@ if ($this->worker && $this->service && ($app->service != $this->service)) {
 			update_user_meta( $profileuser_id, 'app_phone', $_POST['app_phone'] );
 		if ( isset( $_POST['app_address'] ) )
 			update_user_meta( $profileuser_id, 'app_address', $_POST['app_address'] );
+		if ( isset( $_POST['app_organisation'] ) )
+			update_user_meta( $profileuser_id, 'app_organisation', $_POST['app_organisation'] );
 		if ( isset( $_POST['app_city'] ) )
 			update_user_meta( $profileuser_id, 'app_city', $_POST['app_city'] );
 
@@ -3504,6 +3526,13 @@ $gcal_description = __("Client Name: CLIENT\nService Name: SERVICE\nService Prov
 		<th><label><?php _e("My Address", 'appointments'); ?></label></th>
 		<td>
 		<input type="text" style="width:50em" name="app_address" value="<?php echo get_user_meta( $profileuser->ID, 'app_address', true ) ?>" <?php echo $is_readonly ?> />
+		</td>
+		</tr>
+
+		<tr>
+		<th><label><?php _e("My Organisation", 'appointments'); ?></label></th>
+		<td>
+		<input type="text" style="width:50em" name="app_organisation" value="<?php echo get_user_meta( $profileuser->ID, 'app_organisation', true ) ?>" <?php echo $is_readonly ?> />
 		</td>
 		</tr>
 
@@ -4316,6 +4345,7 @@ SITE_NAME
 													'ask_email'					=> '1',
 													'ask_phone'					=> '1',
 													'ask_address'				=> '',
+													'ask_organisation'				=> '',
 													'ask_city'					=> '',
 													'ask_note'					=> '',
 													'additional_css'			=> '.entry-content td{border:none;width:50%}',
@@ -4383,13 +4413,13 @@ SITE_NAME
 
 			$body = apply_filters( 'app_confirmation_message', $this->add_cancel_link( $this->_replace( $this->options["confirmation_message"],
 					$r->name, $this->get_service_name( $r->service), $this->get_worker_name( $r->worker), $r->start, $r->price,
-					$this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->email, $r->city ), $app_id ), $r, $app_id );
+					$this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->organisation, $r->email, $r->city ), $app_id ), $r, $app_id );
 
 			$mail_result = wp_mail(
 						$r->email,
 						$this->_replace( $this->options["confirmation_subject"], $r->name,
 							$this->get_service_name( $r->service), $this->get_worker_name( $r->worker),
-							$r->start, $r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->email, $r->city ),
+							$r->start, $r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->organisation, $r->email, $r->city ),
 						$body,
 						$this->message_headers( ),
 						apply_filters( 'app_confirmation_email_attachments', '' )
@@ -4420,7 +4450,7 @@ SITE_NAME
 				wp_mail(
 						$to,
 						$this->_replace( __('New Appointment','appointments'), $r->name, $this->get_service_name( $r->service), $this->get_worker_name( $r->worker),
-							$r->start, $r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->email, $r->city ),
+							$r->start, $r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->organisation, $r->email, $r->city ),
 						$provider_add_text . $body,
 						$this->message_headers( )
 					);
@@ -4542,10 +4572,10 @@ SITE_NAME
 								'ID'		=> $r->ID,
 								'to'		=> $r->email,
 								'subject'	=> $this->_replace( $this->options["reminder_subject"], $r->name, $this->get_service_name( $r->service),
-									$this->get_worker_name( $r->worker), $r->start, $r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->email, $r->city ),
+									$this->get_worker_name( $r->worker), $r->start, $r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->organisation, $r->email, $r->city ),
 								'message'	=> apply_filters( 'app_reminder_message', $this->add_cancel_link( $this->_replace( $this->options["reminder_message"],
 									$r->name, $this->get_service_name( $r->service), $this->get_worker_name( $r->worker), $r->start,
-									$r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->email, $r->city ), $r->ID ), $r, $r->ID )
+									$r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->organisation, $r->email, $r->city ), $r->ID ), $r, $r->ID )
 							);
 					// Update "sent" field
 					$wpdb->update( $this->app_table,
@@ -4621,10 +4651,10 @@ SITE_NAME
 								'ID'		=> $r->ID,
 								'to'		=> $this->get_worker_email( $r->worker ),
 								'subject'	=> $this->_replace( $this->options["reminder_subject"], $r->name, $this->get_service_name($r->service),
-									$this->get_worker_name($r->worker), $r->start, $r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->email ),
+									$this->get_worker_name($r->worker), $r->start, $r->price, $this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->organisation, $r->email ),
 								'message'	=> $provider_add_text . $this->_replace( $this->options["reminder_message"], $r->name,
 									$this->get_service_name( $r->service), $this->get_worker_name( $r->worker), $r->start, $r->price,
-									$this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->email )
+									$this->get_deposit($r->price), $r->phone, $r->note, $r->address, $r->organisation, $r->email )
 							);
 					// Update "sent" field
 					$wpdb->update( $this->app_table,
@@ -4649,7 +4679,7 @@ SITE_NAME
 	/**
 	 *	Replace placeholders with real values for email subject and content
 	 */
-	function _replace( $text, $user, $service, $worker, $datetime, $price, $deposit, $phone='', $note='', $address='', $email='', $city='' ) {
+	function _replace( $text, $user, $service, $worker, $datetime, $price, $deposit, $phone='', $note='', $address='', $organisation='', $email='', $city='' ) {
 		/*
 		return str_replace(
 					array( "SITE_NAME", "CLIENT", "SERVICE_PROVIDER", "SERVICE", "DATE_TIME", "PRICE", "DEPOSIT", "PHONE", "NOTE", "ADDRESS", "EMAIL", "CITY" ),
@@ -4673,6 +4703,7 @@ SITE_NAME
 			'PHONE' => $phone,
 			'NOTE' => $note,
 			'ADDRESS' => $address,
+			'ORGANISATION' => $organisation,
 			'EMAIL' => $email,
 			'CITY' => $city,
 		);
@@ -5281,6 +5312,7 @@ SITE_NAME
 			$this->options["ask_phone"]					= isset( $_POST["ask_phone"] );
 			$this->options["ask_phone"]					= isset( $_POST["ask_phone"] );
 			$this->options["ask_address"]				= isset( $_POST["ask_address"] );
+			$this->options["ask_organisation"]	= isset( $_POST["ask_organisation"] );
 			$this->options["ask_city"]					= isset( $_POST["ask_city"] );
 			$this->options["ask_note"]					= isset( $_POST["ask_note"] );
 			$this->options["additional_css"]			= trim( $_POST["additional_css"] );
@@ -6376,6 +6408,7 @@ PLACEHOLDER
 				<input type="checkbox" name="ask_email" <?php if ( isset( $this->options["ask_email"] ) && $this->options["ask_email"] ) echo 'checked="checked"' ?> />&nbsp;<?php echo $this->get_field_name('email') ?>&nbsp;&nbsp;&nbsp;
 				<input type="checkbox" name="ask_phone" <?php if ( isset( $this->options["ask_phone"] ) && $this->options["ask_phone"] ) echo 'checked="checked"' ?> />&nbsp;<?php echo $this->get_field_name('phone') ?>&nbsp;&nbsp;&nbsp;
 				<input type="checkbox" name="ask_address" <?php if ( isset( $this->options["ask_address"] ) && $this->options["ask_address"] ) echo 'checked="checked"' ?> />&nbsp;<?php echo $this->get_field_name('address') ?>&nbsp;&nbsp;&nbsp;
+				<input type="checkbox" name="ask_organisation" <?php if ( isset( $this->options["ask_organisation"] ) && $this->options["ask_organisation"] ) echo 'checked="checked"' ?> />&nbsp;<?php echo $this->get_field_name('organisation') ?>&nbsp;&nbsp;&nbsp;
 				<input type="checkbox" name="ask_city" <?php if ( isset( $this->options["ask_city"] ) && $this->options["ask_city"] ) echo 'checked="checked"' ?> />&nbsp;<?php echo $this->get_field_name('city') ?>&nbsp;&nbsp;&nbsp;
 				<input type="checkbox" name="ask_note" <?php if ( isset( $this->options["ask_note"] ) && $this->options["ask_note"] ) echo 'checked="checked"' ?> />&nbsp;<?php echo $this->get_field_name('note') ?>&nbsp;&nbsp;&nbsp;
 				<br />
@@ -8141,6 +8174,7 @@ $(toggle_selected_export);
 					var email = save_parent.find('input[name="email"]').val();
 					var phone = save_parent.find('input[name="phone"]').val();
 					var address = save_parent.find('input[name="address"]').val();
+					var organisation = save_parent.find('input[name="organisation"]').val();
 					var city = save_parent.find('input[name="city"]').val();
 					var service = save_parent.find('select[name="service"] option:selected').val();
 					var worker = save_parent.find('select[name="worker"] option:selected').val();
@@ -8158,7 +8192,7 @@ $(toggle_selected_export);
 					var resend = 0;
 					if (save_parent.find('input[name="resend"]').is(':checked') ) { resend=1;}
 					var app_id = save_parent.find('input[name="app_id"]').val();
-					var data = {action: 'inline_edit_save', user:user, name:name, email:email, phone:phone, address:address,city:city, service:service, worker:worker, price:price, date:date, time:time, note:note, status:status, resend:resend, app_id: app_id, nonce: '<?php echo wp_create_nonce() ?>'};
+					var data = {action: 'inline_edit_save', user:user, name:name, email:email, phone:phone, address:address, organisation:organisation, city:city, service:service, worker:worker, price:price, date:date, time:time, note:note, status:status, resend:resend, app_id: app_id, nonce: '<?php echo wp_create_nonce() ?>'};
 					$(document).trigger('app-appointment-inline_edit-save_data', [data, save_parent]);
 					$.post(ajaxurl, data, function(response) {
 						save_parent.find(".waiting").hide();
@@ -8320,6 +8354,10 @@ $(toggle_selected_export);
 				if ( $address )
 					$app->address = $app->address && !(defined('APP_USE_LEGACY_ADMIN_USERDATA_OVERRIDES') && APP_USE_LEGACY_ADMIN_USERDATA_OVERRIDES) ? $app->address : $address;
 
+				$organisation = get_user_meta( $app->user, 'app_organisation', true );
+				if ( $organisation )
+					$app->organisation = $app->organisation && !(defined('APP_USE_LEGACY_ADMIN_USERDATA_OVERRIDES') && APP_USE_LEGACY_ADMIN_USERDATA_OVERRIDES) ? $app->organisation : $organisation;
+
 				$city = get_user_meta( $app->user, 'app_city', true );
 				if ( $city )
 					$app->city = $app->city && !(defined('APP_USE_LEGACY_ADMIN_USERDATA_OVERRIDES') && APP_USE_LEGACY_ADMIN_USERDATA_OVERRIDES) ? $app->city : $city;
@@ -8335,7 +8373,7 @@ $(toggle_selected_export);
 			$app->ID = $app_max + 1 ; // We want to create a new record
 			// Set other fields to default so that we don't get notice messages
 			$app->user = $app->location = $app->worker = 0;
-			$app->created = $app->end = $app->name = $app->email = $app->phone = $app->address = $app->city = $app->status = $app->sent = $app->sent_worker = $app->note = '';
+			$app->created = $app->end = $app->name = $app->email = $app->phone = $app->address = $app->organisation = $app->city = $app->status = $app->sent = $app->sent_worker = $app->note = '';
 
 			// Get first service and its price
 			$app->service = $this->get_first_service_id();
@@ -8397,6 +8435,13 @@ $(toggle_selected_export);
 		$html .= '<span class="title">'.$this->get_field_name('address'). '</span>';
 		$html .= '<span class="input-text-wrap">';
 		$html .= '<input type="text" name="address" class="ptitle" value="'.stripslashes( $app->address ).'" />';
+		$html .= '</span>';
+		$html .= '</label>';
+		/* Client Organisation */
+		$html .= '<label>';
+		$html .= '<span class="title">'.$this->get_field_name('organisation'). '</span>';
+		$html .= '<span class="input-text-wrap">';
+		$html .= '<input type="text" name="organisation" class="ptitle" value="'.stripslashes( $app->organisation ).'" />';
 		$html .= '</span>';
 		$html .= '</label>';
 		/* Client City */
@@ -8599,6 +8644,7 @@ $(toggle_selected_export);
 		$data['name']		= $_POST['name'];
 		$data['phone']		= $_POST['phone'];
 		$data['address'] 	= $_POST['address'];
+		$data['organisation'] 	= $_POST['organisation'];
 		$data['city']		= $_POST['city'];
 		$data['service']	= $_POST['service'];
 		$service			= $this->get_service( $_POST['service'] );
@@ -8651,6 +8697,8 @@ $(toggle_selected_export);
 				update_user_meta( $data['user'], 'app_phone', $data['phone'] );
 			if ( $data['address'] )
 				update_user_meta( $data['user'], 'app_address', $data['address'] );
+			if ( $data['organisation'] )
+				update_user_meta( $data['user'], 'app_organisation', $data['organisation'] );
 			if ( $data['city'] )
 				update_user_meta( $data['user'], 'app_city', $data['city'] );
 

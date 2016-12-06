@@ -2810,7 +2810,7 @@ msgid "Date and time: "
 msgstr ""
 
 #: appointments.php:1400
-msgid "Lasts (approx): "
+msgid "Allocated time: "
 msgstr ""
 
 #: appointments.php:1400

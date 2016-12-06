@@ -1703,6 +1703,11 @@ class App_Shortcode_Confirmation extends App_Shortcode {
 				'help' => __('Descriptive title of the field.', 'appointments'),
 				'example' => __('Your address:','appointments'),
 			),
+			'organisation' => array(
+				'value' => __('Your organisation:','appointments'),
+				'help' => __('Descriptive title of the field.', 'appointments'),
+				'example' => __('Your organisation:','appointments'),
+			),
 			'city' => array(
 				'value' => __('City:','appointments'),
 				'help' => __('Descriptive title of the field.', 'appointments'),
@@ -1780,6 +1785,10 @@ class App_Shortcode_Confirmation extends App_Shortcode {
 			if ( $address_meta )
 				$a = $address_meta;
 
+			$organisation_meta = get_user_meta( $current_user->ID, 'app_organisation', true );
+			if ( $organisation_meta )
+				$a = $organisation_meta;
+
 			$city_meta = get_user_meta( $current_user->ID, 'app_city', true );
 			if ( $city_meta )
 				$c = $city_meta;
@@ -1811,6 +1820,9 @@ class App_Shortcode_Confirmation extends App_Shortcode {
 		$ret .= '</div>';
 		$ret .= '<div class="appointments-address-field" style="display:none">';
 		$ret .= '<label><span>'. $address . '</span><input type="text" class="appointments-address-field-entry" id="' . esc_attr(apply_filters('app-shortcode-confirmation-address_field_id', 'appointments-field-customer_address')) . '" value="'.$a.'" /></label>';
+		$ret .= '</div>';
+		$ret .= '<div class="appointments-organisation-field" style="display:none">';
+		$ret .= '<label><span>'. $organisation . '</span><input type="text" class="appointments-organisation-field-entry" id="' . esc_attr(apply_filters('app-shortcode-confirmation-organisation_field_id', 'appointments-field-customer_organisation')) . '" value="'.$a.'" /></label>';
 		$ret .= '</div>';
 		$ret .= '<div class="appointments-city-field" style="display:none">';
 		$ret .= '<label><span>'. $city . '</span><input type="text" class="appointments-city-field-entry" id="' . esc_attr(apply_filters('app-shortcode-confirmation-city_field_id', 'appointments-field-customer_city')) . '" value="'.$c.'" /></label>';
@@ -1868,6 +1880,9 @@ class App_Shortcode_Confirmation extends App_Shortcode {
 							if (response.address =="ask"){
 								$(".appointments-address-field").show();
 							}
+							if (response.organisation =="ask"){
+								$(".appointments-organisation-field").show();
+							}
 							if (response.city =="ask"){
 								$(".appointments-city-field").show();
 							}
@@ -1896,12 +1911,13 @@ class App_Shortcode_Confirmation extends App_Shortcode {
 		$script .= 'var app_email = $(".appointments-email-field-entry").val();';
 		$script .= 'var app_phone = $(".appointments-phone-field-entry").val();';
 		$script .= 'var app_address = $(".appointments-address-field-entry").val();';
+		$script .= 'var app_organisation = $(".appointments-organisation-field-entry").val();';
 		$script .= 'var app_city = $(".appointments-city-field-entry").val();';
 		$script .= 'var app_note = $(".appointments-note-field-entry").val();';
 		$script .= 'var app_gcal = "";';
 		$script .= 'var app_warning_text = "'.esc_js($warning_text).'";';
 		$script .= 'if ($(".appointments-gcal-field-entry").is(":checked")){app_gcal=1;}';
-		$script .= 'var post_data = {action: "post_confirmation", value: final_value, app_name: app_name, app_email: app_email, app_phone: app_phone, app_address: app_address, app_city: app_city, app_note: app_note, app_gcal: app_gcal, nonce: "'. wp_create_nonce() .'"};';
+		$script .= 'var post_data = {action: "post_confirmation", value: final_value, app_name: app_name, app_email: app_email, app_phone: app_phone, app_address: app_address, app_organisation: app_organisation, app_city: app_city, app_note: app_note, app_gcal: app_gcal, nonce: "'. wp_create_nonce() .'"};';
 		if ( $appointments->options["ask_name"] ) {
 			$script .= 'if($(".appointments-name-field-entry").val()=="" ) {';
 			$script .= 'alert(app_warning_text);';
@@ -1927,6 +1943,13 @@ class App_Shortcode_Confirmation extends App_Shortcode {
 			$script .= 'if($(".appointments-address-field-entry").val()=="" ) {';
 			$script .= 'alert(app_warning_text);';
 			$script .= '$(".appointments-address-field-entry").focus();';
+			$script .= 'return false;';
+			$script .= '}';
+		}
+		if ( $appointments->options["ask_organisation"] ) {
+			$script .= 'if($(".appointments-organisation-field-entry").val()=="" ) {';
+			$script .= 'alert(app_warning_text);';
+			$script .= '$(".appointments-organisation-field-entry").focus();';
 			$script .= 'return false;';
 			$script .= '}';
 		}

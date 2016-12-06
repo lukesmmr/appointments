@@ -5,6 +5,7 @@
 */
 .wait_img{
 z-index:1000;
+margin-left: 10px;
 }
 .app_timetable_cell .wait_img {
     float: right;
