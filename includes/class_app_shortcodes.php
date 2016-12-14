@@ -1569,6 +1569,237 @@ class App_Shortcode_Login extends App_Shortcode {
 	}
 }
 
+
+/**
+ * Output weekly order summary.
+ */
+class App_Weekly_Summary extends App_Shortcode {
+	public function __construct () {
+		$this->_defaults = array(
+			'title' => array(
+				'value' => __('Upcoming bookings', 'appointments'),
+				'help' => __('Title text.', 'appointments'),
+				'example' => __('This weeks appointments', 'appointments'),
+			),
+			'status' => array(
+				'value' => 'paid,confirmed',
+				'help' => __('Which status(es) will be included. Possible values: paid, confirmed, completed, pending, removed, reserved or combinations of them separated with comma.', 'appointments'),
+				'allowed_values' => array('paid', 'confirmed', 'pending', 'completed', 'removed', 'reserved'),
+				'example' => 'paid,confirmed',
+			),
+			'order_by' => array(
+				'value' => 'start',
+				'help' => __('Sort order of the appointments. Possible values: ID, start. Optionally DESC (descending) can be used, e.g. "start DESC" will reverse the order. Default: "start". Note: This is the sort order as page loads. Table can be dynamically sorted by any field from front end (Some date formats may not be sorted correctly).', 'appointments'),
+				'example' => 'start',
+			)
+		);
+	}
+
+	public function get_usage_info () {
+		return __('Inserts weekly summary for orders.', 'appointments');
+	}
+
+	public function process_shortcode ($args=array(), $content='') {
+
+		global $wpdb, $appointments;
+		extract(wp_parse_args($args, $this->_defaults_to_args()));
+
+		$statuses = explode( ',', $status );
+
+		if ( !is_array( $statuses ) || empty( $statuses ) )
+			return;
+
+		if ( !trim( $order_by ) )
+			$order_by = 'start';
+
+		if ( !trim( $group_by ) )
+			$group_by = 'start';
+
+		$stat = '';
+		foreach ( $statuses as $s ) {
+			// Allow only defined stats
+			if ( array_key_exists( trim( $s ), App_Template::get_status_names() ) )
+				$stat .= " status='". trim( $s ) ."' OR ";
+		}
+		$stat = rtrim( $stat, "OR " );
+
+		// TABLE 1 CURRENT WEEK
+
+		$upcoming_calendar_week = $wpdb->get_results( "
+			SELECT
+				*,
+		    DATE_ADD(start, INTERVAL(1-DAYOFWEEK(start)) DAY) AS week_start,
+		    DATE_ADD(start, INTERVAL(7-DAYOFWEEK(start)) DAY) AS week_end
+			FROM
+			    " . $appointments->app_table . "
+			WHERE
+				start > DATE_ADD( NOW(), INTERVAL( 1-DAYOFWEEK( NOW() ) ) DAY) AND
+				start < DATE_ADD( NOW(), INTERVAL( 7-DAYOFWEEK( NOW() ) ) DAY)
+			GROUP BY
+		 		".$appointments->sanitize_order_by( $group_by )."
+			ORDER BY
+		 		".$appointments->sanitize_order_by( $order_by )."
+		");
+
+
+		$ret  = '';
+		$ret .= '<div class="appointments-weekly-summary">';
+		$ret .= '<div class="page-header"><h2>Current Week';
+		foreach ( $upcoming_calendar_week as $cw) {
+				$week = date( 'W', strtotime($cw->start) );
+				$week_start = date( $appointments->date_format, strtotime($cw->week_start) );
+				$week_end = date( $appointments->date_format, strtotime($cw->week_end) );
+				$ret .= ' - Nr.' . $week . ' <small>(' . $week_start . ' - ' . $week_end . ')</small>';
+				break;
+		}
+		$ret .= '</h2></div>';
+		$ret  = apply_filters( 'app_all_appointments_before_table', $ret );
+		$ret .= '<table class="table all-appointments tablesorter" id="current_week_table"><thead>';
+		$ret .= apply_filters( 'app_all_appointments_column_name',
+			'<th class="all-appointments-service">'. __('Date/time', 'appointments' )
+			. '</th><th class="all-appointments-organisation">' . __('Organisation', 'appointments' )
+			. '</th><th class="all-appointments-client">' . __('Client name', 'appointments' )
+			);
+		$colspan = 5;
+
+		$ret .= '</thead><tbody>';
+		// var_dump($upcoming_calendar_week);
+
+		if ( $upcoming_calendar_week ) {
+			foreach ( $upcoming_calendar_week as $r ) {
+
+					$ret .= '<tr><td>';
+					$ret .= date_i18n( 'G:i, l (j.m)', strtotime( $r->start ) ) . '</td>';
+					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
+
+					$ret .= '<td>';
+					if ($r->organisation != '') {
+						$ret .= $r->organisation. '</td>';
+					} else {
+						$ret .= 'n/a</td>';
+					}
+
+					$ret .= '<td>';
+					$ret .= $appointments->get_client_name( $r->ID ) . '</td>';
+					$ret .= apply_filters('app-shortcode-all_appointments-after_client', '', $r);
+
+					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
+					$ret .= '</tr>';
+
+			}
+		}
+		else
+			$ret .= '<tr><td colspan="'.$colspan.'">'. __('No appointments','appointments'). '</td></tr>';
+
+
+		$ret .= '</tbody></table>';
+		$ret .= '<button class="btn btn-default" id="print_curweek"><i class="glyphicon glyphicon-print"></i> Print table</button>';
+		$ret  = apply_filters( 'app_all_appointments_after_table', $ret, $results );
+		$ret .= '</div>';
+
+		// TABLE 2 UPCOMING WEEK
+
+		$upcoming_calendar_week_2 = $wpdb->get_results( "
+			SELECT
+				*,
+		    DATE_ADD(start, INTERVAL(1-DAYOFWEEK(start)) DAY) AS week_start,
+		    DATE_ADD(start, INTERVAL(7-DAYOFWEEK(start)) DAY) AS week_end
+			FROM
+			    " . $appointments->app_table . "
+			WHERE
+				start > DATE_ADD( DATE_ADD(NOW(), INTERVAL 7 DAY), INTERVAL( 1-DAYOFWEEK( DATE_ADD(NOW(), INTERVAL 7 DAY) ) ) DAY) AND
+				start < DATE_ADD( DATE_ADD(NOW(), INTERVAL 7 DAY), INTERVAL( 7-DAYOFWEEK( DATE_ADD(NOW(), INTERVAL 7 DAY) ) ) DAY)
+			GROUP BY
+		 		".$appointments->sanitize_order_by( $group_by )."
+			ORDER BY
+		 		".$appointments->sanitize_order_by( $order_by )."
+		");
+
+		$ret .= '<div class="appointments-weekly-summary-week2">';
+		$ret .= '<div class="page-header"><h2>Next week';
+		foreach ( $upcoming_calendar_week_2 as $cw) {
+				$week = date( 'W', strtotime($cw->start) );
+				$week_start = date( $appointments->date_format, strtotime($cw->week_start) );
+				$week_end = date( $appointments->date_format, strtotime($cw->week_end) );
+				// var_dump($week_start);
+				$ret .= ' - Nr.' . $week . ' <small>(' . $week_start . ' - ' . $week_end . ')</small>';
+				break;
+		}
+		$ret .= '</h2></div>';
+		$ret  = apply_filters( 'app_all_appointments_before_table', $ret );
+		$ret .= '<table class="table all-appointments tablesorter" id="upcoming_week_table"><thead>';
+		$ret .= apply_filters( 'app_all_appointments_column_name',
+			'<th class="all-appointments-service">'. __('Date/time', 'appointments' )
+			. '</th><th class="all-appointments-organisation">' . __('Organisation', 'appointments' )
+			. '</th><th class="all-appointments-client">' . __('Client name', 'appointments' )
+			);
+		$colspan = 5;
+
+		$ret .= '</thead><tbody>';
+		// var_dump($upcoming_calendar_week);
+
+		if ( $upcoming_calendar_week_2 ) {
+			foreach ( $upcoming_calendar_week_2 as $r ) {
+
+					$ret .= '<tr><td>';
+					$ret .= date_i18n( 'G:i, l (j.m)', strtotime( $r->start ) ) . '</td>';
+					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
+
+					$ret .= '<td>';
+					if ($r->organisation != '') {
+						$ret .= $r->organisation. '</td>';
+					} else {
+						$ret .= 'n/a</td>';
+					}
+
+					$ret .= '<td>';
+					$ret .= $appointments->get_client_name( $r->ID ) . '</td>';
+					$ret .= apply_filters('app-shortcode-all_appointments-after_client', '', $r);
+
+					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
+					$ret .= '</tr>';
+
+			}
+		}
+		else
+			$ret .= '<tr><td colspan="'.$colspan.'">'. __('No appointments','appointments'). '</td></tr>';
+
+		$ret .= '</tbody></table>';
+		$ret .= '<button class="btn btn-default" id="print_nextweek"><i class="glyphicon glyphicon-print"></i> Print table</button>';
+		$ret  = apply_filters( 'app_all_appointments_after_table', $ret, $results );
+		$ret .= '</div>';
+
+			// add print functionality
+		$appointments->add2footer( '
+			function printCurWeek()
+			{
+			   var divToPrint1=document.getElementById("current_week_table");
+			   newWin= window.open("");
+			   newWin.document.write(divToPrint1.outerHTML);
+			   newWin.print();
+			   newWin.close();
+			}
+			function printUpcomingWeek()
+			{
+			   var divToPrint2=document.getElementById("upcoming_week_table");
+			   newWin2= window.open("");
+			   newWin2.document.write(divToPrint2.outerHTML);
+			   newWin2.print();
+			   newWin2.close();
+			}
+			$("#print_curweek").on("click",function(){
+				printCurWeek();
+			});
+			$("#print_nextweek").on("click",function(){
+				printUpcomingWeek();
+			});
+		');
+
+		return $ret;
+	}
+
+}
+
 /**
  * Adds PayPal payment forms.
  */
@@ -2031,6 +2262,7 @@ function app_core_shortcodes_register ($shortcodes) {
 	$shortcodes['app_all_appointments'] = 'App_Shortcode_AllAppointments';
 	$shortcodes['app_my_appointments'] = 'App_Shortcode_MyAppointments';
 	$shortcodes['app_services'] = 'App_Shortcode_Services';
+	$shortcodes['app_weekly_summary'] = 'App_Weekly_Summary';
 	$shortcodes['app_service_providers'] = 'App_Shortcode_ServiceProviders';
 	$shortcodes['app_login'] = 'App_Shortcode_Login';
 	$shortcodes['app_paypal'] = 'App_Shortcode_Paypal';
