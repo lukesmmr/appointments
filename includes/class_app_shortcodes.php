@@ -1680,7 +1680,7 @@ class App_Weekly_Summary extends App_Shortcode {
 					}
 
 					$ret .= '<td>';
-					$ret .= $appointments->get_client_name( $r->ID ) . '</td>';
+					$ret .= $appointments->get_client_name_nolink( $r->ID ) . '</td>';
 					$ret .= apply_filters('app-shortcode-all_appointments-after_client', '', $r);
 
 					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
@@ -1753,7 +1753,7 @@ class App_Weekly_Summary extends App_Shortcode {
 					}
 
 					$ret .= '<td>';
-					$ret .= $appointments->get_client_name( $r->ID ) . '</td>';
+					$ret .= $appointments->get_client_name_nolink( $r->ID ) . '</td>';
 					$ret .= apply_filters('app-shortcode-all_appointments-after_client', '', $r);
 
 					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );

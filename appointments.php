@@ -797,6 +797,37 @@ class Appointments {
 		return apply_filters( 'app_get_client_name', $name, $app_id, $result );
 	}
 
+		/**
+	 * Find client name given his appointment no link
+	 * @return string
+	 */
+	function get_client_name_nolink( $app_id ) {
+		$name = '';
+		// This is only used on admin side, so an optimization is not required.
+		$result = $this->db->get_row( $this->db->prepare("SELECT * FROM {$this->app_table} WHERE ID=%d", $app_id) );
+		if ( $result !== null ) {
+			// Client can be a user
+			if ( $result->user ) {
+				$userdata = get_userdata( $result->user );
+				if ( $userdata ) {
+					$href = function_exists('bp_core_get_user_domain') && (defined('APP_BP_LINK_TO_PROFILE') && APP_BP_LINK_TO_PROFILE)
+						? bp_core_get_user_domain($result->user)
+						: admin_url("user-edit.php?user_id="). $result->user
+					;
+					$name = ($result->name && !(defined('APP_USE_LEGACY_ADMIN_USERDATA_OVERRIDES') && APP_USE_LEGACY_ADMIN_USERDATA_OVERRIDES) ? $result->name : $userdata->user_login);
+				}
+				else
+					$name = $result->name;
+			}
+			else {
+				$name = $result->name;
+				if ( !$name )
+					$name = $result->email;
+			}
+		}
+		return apply_filters( 'app_get_client_name', $name, $app_id, $result );
+	}
+
 	/**
 	 * Get price for the current service and worker
 	 * If worker has additional price (optional), it is added to the service price
