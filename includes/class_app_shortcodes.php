@@ -1604,27 +1604,13 @@ class App_Weekly_Summary extends App_Shortcode {
 		global $wpdb, $appointments;
 		extract(wp_parse_args($args, $this->_defaults_to_args()));
 
-		$statuses = explode( ',', $status );
-
-		if ( !is_array( $statuses ) || empty( $statuses ) )
-			return;
-
 		if ( !trim( $order_by ) )
 			$order_by = 'start';
 
 		if ( !trim( $group_by ) )
 			$group_by = 'start';
 
-		$stat = '';
-		foreach ( $statuses as $s ) {
-			// Allow only defined stats
-			if ( array_key_exists( trim( $s ), App_Template::get_status_names() ) )
-				$stat .= " status='". trim( $s ) ."' OR ";
-		}
-		$stat = rtrim( $stat, "OR " );
-
 		// TABLE 1 CURRENT WEEK
-
 		$upcoming_calendar_week = $wpdb->get_results( "
 			SELECT
 				*,
@@ -1640,7 +1626,6 @@ class App_Weekly_Summary extends App_Shortcode {
 			ORDER BY
 		 		".$appointments->sanitize_order_by( $order_by )."
 		");
-
 
 		$ret  = '';
 		$ret .= '<div class="appointments-weekly-summary">';
@@ -1673,10 +1658,11 @@ class App_Weekly_Summary extends App_Shortcode {
 					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
 
 					$ret .= '<td>';
+					// if organisation is not in results grab it from user meta
 					if ($r->organisation != '') {
 						$ret .= $r->organisation. '</td>';
 					} else {
-						$ret .= 'n/a</td>';
+						$ret .= $appointments->get_organisation_name( $r->ID );
 					}
 
 					$ret .= '<td>';
@@ -1691,14 +1677,12 @@ class App_Weekly_Summary extends App_Shortcode {
 		else
 			$ret .= '<tr><td colspan="'.$colspan.'">'. __('No appointments','appointments'). '</td></tr>';
 
-
 		$ret .= '</tbody></table>';
 		$ret .= '<button class="btn btn-default" id="print_curweek"><i class="glyphicon glyphicon-print"></i> Print table</button>';
 		$ret  = apply_filters( 'app_all_appointments_after_table', $ret, $results );
 		$ret .= '</div>';
 
 		// TABLE 2 UPCOMING WEEK
-
 		$upcoming_calendar_week_2 = $wpdb->get_results( "
 			SELECT
 				*,
@@ -2017,8 +2001,11 @@ class App_Shortcode_Confirmation extends App_Shortcode {
 				$a = $address_meta;
 
 			$organisation_meta = get_user_meta( $current_user->ID, 'app_organisation', true );
+			$user_organisation_meta = get_user_meta( $current_user->ID, 'organisation', true );
 			if ( $organisation_meta )
-				$a = $organisation_meta;
+				$o = $organisation_meta;
+			else
+				$o = $user_organisation_meta;
 
 			$city_meta = get_user_meta( $current_user->ID, 'app_city', true );
 			if ( $city_meta )
@@ -2053,7 +2040,7 @@ class App_Shortcode_Confirmation extends App_Shortcode {
 		$ret .= '<label><span>'. $address . '</span><input type="text" class="appointments-address-field-entry" id="' . esc_attr(apply_filters('app-shortcode-confirmation-address_field_id', 'appointments-field-customer_address')) . '" value="'.$a.'" /></label>';
 		$ret .= '</div>';
 		$ret .= '<div class="appointments-organisation-field" style="display:none">';
-		$ret .= '<label><span>'. $organisation . '</span><input type="text" class="appointments-organisation-field-entry" id="' . esc_attr(apply_filters('app-shortcode-confirmation-organisation_field_id', 'appointments-field-customer_organisation')) . '" value="'.$a.'" /></label>';
+		$ret .= '<label><span>'. $organisation . '</span><input type="text" class="appointments-organisation-field-entry" id="' . esc_attr(apply_filters('app-shortcode-confirmation-organisation_field_id', 'appointments-field-customer_organisation')) . '" value="'.$o.'" /></label>';
 		$ret .= '</div>';
 		$ret .= '<div class="appointments-city-field" style="display:none">';
 		$ret .= '<label><span>'. $city . '</span><input type="text" class="appointments-city-field-entry" id="' . esc_attr(apply_filters('app-shortcode-confirmation-city_field_id', 'appointments-field-customer_city')) . '" value="'.$c.'" /></label>';

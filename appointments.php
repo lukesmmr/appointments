@@ -828,6 +828,25 @@ class Appointments {
 		return apply_filters( 'app_get_client_name', $name, $app_id, $result );
 	}
 
+		/**
+	 * Find client name given his appointment no link
+	 * @return string
+	 */
+	function get_organisation_name( $app_id ) {
+		$organisation = '';
+		// This is only used on admin side, so an optimization is not required.
+		$result = $this->db->get_row( $this->db->prepare("SELECT * FROM {$this->app_table} WHERE ID=%d", $app_id) );
+		if ( $result !== null ) {
+			// Client can be a user
+			if ( $result->user ) {
+				$userdata = get_userdata( $result->user );
+				$user_organisation = get_user_meta($userdata->ID, 'organisation');
+				$organisation = $user_organisation[0];
+			}
+		}
+		return apply_filters( 'app_get_client_name', $organisation, $app_id, $result );
+	}
+
 	/**
 	 * Get price for the current service and worker
 	 * If worker has additional price (optional), it is added to the service price
