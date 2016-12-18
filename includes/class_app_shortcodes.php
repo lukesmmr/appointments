@@ -1652,7 +1652,7 @@ class App_Weekly_Summary extends App_Shortcode {
 
 		if ( $upcoming_calendar_week ) {
 			foreach ( $upcoming_calendar_week as $r ) {
-
+				if ($r->status == 'confirmed') {
 					$ret .= '<tr><td>';
 					$ret .= date_i18n( 'G:i, l (j.m)', strtotime( $r->start ) ) . '</td>';
 					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
@@ -1671,7 +1671,7 @@ class App_Weekly_Summary extends App_Shortcode {
 
 					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
 					$ret .= '</tr>';
-
+				}
 			}
 		}
 		else
@@ -1724,7 +1724,7 @@ class App_Weekly_Summary extends App_Shortcode {
 
 		if ( $upcoming_calendar_week_2 ) {
 			foreach ( $upcoming_calendar_week_2 as $r ) {
-
+				if ($r->status == 'confirmed') {
 					$ret .= '<tr><td>';
 					$ret .= date_i18n( 'G:i, l (j.m)', strtotime( $r->start ) ) . '</td>';
 					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
@@ -1743,7 +1743,7 @@ class App_Weekly_Summary extends App_Shortcode {
 
 					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
 					$ret .= '</tr>';
-
+				}
 			}
 		}
 		else
