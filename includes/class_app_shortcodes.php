@@ -1730,10 +1730,11 @@ class App_Weekly_Summary extends App_Shortcode {
 					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
 
 					$ret .= '<td>';
+					// if organisation is not in results grab it from user meta
 					if ($r->organisation != '') {
 						$ret .= $r->organisation. '</td>';
 					} else {
-						$ret .= 'n/a</td>';
+						$ret .= $appointments->get_organisation_name( $r->ID );
 					}
 
 					$ret .= '<td>';
