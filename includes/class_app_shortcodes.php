@@ -1621,8 +1621,6 @@ class App_Weekly_Summary extends App_Shortcode {
 			WHERE
 				start > DATE_ADD( NOW(), INTERVAL( 1-DAYOFWEEK( NOW() ) ) DAY) AND
 				start < DATE_ADD( NOW(), INTERVAL( 7-DAYOFWEEK( NOW() ) ) DAY)
-			GROUP BY
-		 		".$appointments->sanitize_order_by( $group_by )."
 			ORDER BY
 		 		".$appointments->sanitize_order_by( $order_by )."
 		");
@@ -1720,8 +1718,6 @@ class App_Weekly_Summary extends App_Shortcode {
 			WHERE
 				start > DATE_ADD( DATE_ADD(NOW(), INTERVAL 7 DAY), INTERVAL( 1-DAYOFWEEK( DATE_ADD(NOW(), INTERVAL 7 DAY) ) ) DAY) AND
 				start < DATE_ADD( DATE_ADD(NOW(), INTERVAL 7 DAY), INTERVAL( 7-DAYOFWEEK( DATE_ADD(NOW(), INTERVAL 7 DAY) ) ) DAY)
-			GROUP BY
-		 		".$appointments->sanitize_order_by( $group_by )."
 			ORDER BY
 		 		".$appointments->sanitize_order_by( $order_by )."
 		");
