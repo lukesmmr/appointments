@@ -667,3 +667,11 @@ opacity: 0.5;
     float: none;
   }
 }
+
+@media print
+{
+    .no-print, .no-print *
+    {
+        display: none !important;
+    }
+}

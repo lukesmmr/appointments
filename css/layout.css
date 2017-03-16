@@ -216,3 +216,10 @@ h1 {
 	position: relative;
 	height: 36px;
 }
+@media print
+{
+    .no-print, .no-print *
+    {
+        display: none !important;
+    }
+}
