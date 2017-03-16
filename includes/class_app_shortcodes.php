@@ -1664,7 +1664,7 @@ class App_Weekly_Summary extends App_Shortcode {
 			$i = 0;
 			$days_arr = array();
 			foreach ( $upcoming_calendar_week as $r ) {
-				if ($r->status == 'confirmed') {
+				if ($r->status == 'confirmed' || $r->status == 'completed') {
 					$i++;
 					if (in_array(date_i18n( 'l d F', strtotime( $r->start ) ), $days_arr) == 0) {
 						array_push($days_arr, date_i18n( 'l d F', strtotime( $r->start ) ));
@@ -1752,7 +1752,7 @@ class App_Weekly_Summary extends App_Shortcode {
 			$y = 0;
 			$upcoming_days_arr = array();
 			foreach ( $upcoming_calendar_week_2 as $r ) {
-				if ($r->status == 'confirmed') {
+        if ($r->status == 'confirmed' || $r->status == 'completed') {
 					$y++;
 
 					if (in_array(date_i18n( 'l d F', strtotime( $r->start ) ), $upcoming_days_arr) == 0) {
