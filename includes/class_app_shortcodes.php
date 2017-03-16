@@ -1687,7 +1687,7 @@ class App_Weekly_Summary extends App_Shortcode {
 						$ret .= $appointments->get_organisation_name( $r->ID ). '</td>';
 					}
 					$ret .= '<td>';
-					$ret .= date_i18n( 'F m, Y g:i a', strtotime( $r->start ) ) . '</td>';
+					$ret .= date_i18n( 'F d, Y g:i a', strtotime( $r->start ) ) . '</td>';
 					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
 					$ret .= apply_filters('app-shortcode-all_appointments-after_client', '', $r);
 					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
@@ -1776,7 +1776,7 @@ class App_Weekly_Summary extends App_Shortcode {
 						$ret .= $appointments->get_organisation_name( $r->ID ). '</td>';
 					}
 					$ret .= '<td>';
-					$ret .= date_i18n( 'F m, Y g:i a', strtotime( $r->start ) ) . '</td>';
+					$ret .= date_i18n( 'F d, Y g:i a', strtotime( $r->start ) ) . '</td>';
 					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
 					$ret .= apply_filters('app-shortcode-all_appointments-after_client', '', $r);
 					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
