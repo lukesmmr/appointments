@@ -1627,23 +1627,33 @@ class App_Weekly_Summary extends App_Shortcode {
 		 		".$appointments->sanitize_order_by( $order_by )."
 		");
 
-		$ret  = '';
-		$ret .= '<div class="appointments-weekly-summary">';
-		$ret .= '<div class="page-header"><h2>Current Week';
+    $ret  = '';
+
+    // TAB HEADER
+    $ret  = '<ul class="nav nav-tabs no-print" role="tablist">
+    <li role="presentation" class="active"><a href="#thisweek" aria-controls="thisweek" style="padding: 8px 12px; font-weight: bold; text-transform: uppercase;" role="tab" data-toggle="tab">This Week</a></li>
+    <li role="presentation"><a href="#nextweek" aria-controls="nextweek" style="padding: 8px 12px; font-weight: bold; text-transform: uppercase;" role="tab" data-toggle="tab">Next week</a></li>
+    </ul>';
+
+    $ret .= '<div class="tab-content">';
+		$ret .= '<div role="tabpanel" class="tab-pane active" id="thisweek">';
+
+		$ret .= '<div id="weekly_summary" class="appointments-weekly-summary">';
+		$ret .= '<div class="page-header"><h2><span class="no-print">Current Week';
 		foreach ( $upcoming_calendar_week as $cw) {
 				$week = date( 'W', strtotime($cw->start) );
 				$week_start = date( $appointments->date_format, strtotime($cw->week_start) );
 				$week_end = date( $appointments->date_format, strtotime($cw->week_end) );
-				$ret .= ' - Nr.' . $week . ' <small>(' . $week_start . ' - ' . $week_end . ')</small>';
+				$ret .= ' - Nr.' . $week . ' </span><small>' . $week_start . ' - ' . $week_end . '</small>';
 				break;
 		}
 		$ret .= '</h2></div>';
 		$ret  = apply_filters( 'app_all_appointments_before_table', $ret );
 		$ret .= '<table class="table all-appointments tablesorter" id="current_week_table"><thead>';
 		$ret .= apply_filters( 'app_all_appointments_column_name',
-			'<th class="all-appointments-service">'. __('Date/time', 'appointments' )
+			'<th class="all-appointments-service">'. __('Client name', 'appointments' )
 			. '</th><th class="all-appointments-organisation">' . __('Organisation', 'appointments' )
-			. '</th><th class="all-appointments-client">' . __('Client name', 'appointments' )
+			. '</th><th class="all-appointments-client">' . __('Date / Time', 'appointments' )
 			);
 		$colspan = 5;
 
@@ -1652,40 +1662,52 @@ class App_Weekly_Summary extends App_Shortcode {
 
 		if ( $upcoming_calendar_week ) {
 			$i = 0;
+			$days_arr = array();
 			foreach ( $upcoming_calendar_week as $r ) {
 				if ($r->status == 'confirmed') {
 					$i++;
-					$ret .= '<tr><td>';
-					$ret .= date_i18n( 'G:i, l (j.m)', strtotime( $r->start ) ) . '</td>';
-					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
-
+					if (in_array(date_i18n( 'l d F', strtotime( $r->start ) ), $days_arr) == 0) {
+						array_push($days_arr, date_i18n( 'l d F', strtotime( $r->start ) ));
+						$ret .= '<tr>';
+						$ret .= '<td colspan="3" style="font-weight: bold;text-align:center;">';
+						$ret .= date_i18n( 'l d F', strtotime( $r->start ) );
+						$ret .= '</td>';
+						$ret .= '</tr>';
+					}
+					$ret .= '<tr>';
+					// CLIENT NAME
 					$ret .= '<td>';
+					$ret .= $appointments->get_client_name_nolink( $r->ID ) . '</td>';
+					// ORGANISATION NAME
 					// if organisation is not in results grab it from user meta
+					$ret .= '<td>';
 					if ($r->organisation != '') {
 						$ret .= $r->organisation. '</td>';
 					} else {
-						$ret .= $appointments->get_organisation_name( $r->ID );
+						$ret .= $appointments->get_organisation_name( $r->ID ). '</td>';
 					}
-
 					$ret .= '<td>';
-					$ret .= $appointments->get_client_name_nolink( $r->ID ) . '</td>';
+					$ret .= date_i18n( 'F m, Y g:i a', strtotime( $r->start ) ) . '</td>';
+					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
 					$ret .= apply_filters('app-shortcode-all_appointments-after_client', '', $r);
-
 					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
 					$ret .= '</tr>';
 				}
 			}
-		}
-		if ($i < 1) {
-			$ret .= '<tr><td colspan="'.$colspan.'">'. __('No appointments','appointments'). '</td></tr>';
+			if ($i < 1) {
+				$ret .= '<tr><td colspan="'.$colspan.'">'. __('No appointments','appointments'). '</td></tr>';
+			}
 		}
 		else
 			$ret .= '<tr><td colspan="'.$colspan.'">'. __('No appointments','appointments'). '</td></tr>';
 
 		$ret .= '</tbody></table>';
-		$ret .= '<button class="btn btn-default" id="print_curweek"><i class="glyphicon glyphicon-print"></i> Print table</button>';
+		$ret .= '<button class="btn btn-default no-print" onclick="window.print();" id="print_curweek"><i class="glyphicon glyphicon-print"></i> Print</button>';
 		$ret  = apply_filters( 'app_all_appointments_after_table', $ret, $results );
-		$ret .= '</div>';
+    $ret .= '</div>'; // end div
+		$ret .= '</div>'; // end tab
+
+    $ret .= '<div role="tabpanel" class="tab-pane" id="nextweek">';
 
 		// TABLE 2 UPCOMING WEEK
 		$upcoming_calendar_week_2 = $wpdb->get_results( "
@@ -1704,23 +1726,23 @@ class App_Weekly_Summary extends App_Shortcode {
 		 		".$appointments->sanitize_order_by( $order_by )."
 		");
 
-		$ret .= '<div class="appointments-weekly-summary-week2">';
-		$ret .= '<div class="page-header"><h2>Next week';
+		$ret .= '<div id="weekly_summary_2" class="appointments-weekly-summary-week2">';
+		$ret .= '<div class="page-header"><h2><span class="no-print">Next week';
 		foreach ( $upcoming_calendar_week_2 as $cw) {
 				$week = date( 'W', strtotime($cw->start) );
 				$week_start = date( $appointments->date_format, strtotime($cw->week_start) );
 				$week_end = date( $appointments->date_format, strtotime($cw->week_end) );
 				// var_dump($week_start);
-				$ret .= ' - Nr.' . $week . ' <small>(' . $week_start . ' - ' . $week_end . ')</small>';
+				$ret .= ' - Nr.' . $week . ' </span><small>' . $week_start . ' - ' . $week_end . '</small>';
 				break;
 		}
 		$ret .= '</h2></div>';
 		$ret  = apply_filters( 'app_all_appointments_before_table', $ret );
 		$ret .= '<table class="table all-appointments tablesorter" id="upcoming_week_table"><thead>';
 		$ret .= apply_filters( 'app_all_appointments_column_name',
-			'<th class="all-appointments-service">'. __('Date/time', 'appointments' )
+			'<th class="all-appointments-service">'. __('Client name', 'appointments' )
 			. '</th><th class="all-appointments-organisation">' . __('Organisation', 'appointments' )
-			. '</th><th class="all-appointments-client">' . __('Client name', 'appointments' )
+			. '</th><th class="all-appointments-client">' . __('Date / Time', 'appointments' )
 			);
 		$colspan = 5;
 
@@ -1728,25 +1750,35 @@ class App_Weekly_Summary extends App_Shortcode {
 		// var_dump($upcoming_calendar_week);
 		if ( $upcoming_calendar_week_2 ) {
 			$y = 0;
+			$upcoming_days_arr = array();
 			foreach ( $upcoming_calendar_week_2 as $r ) {
 				if ($r->status == 'confirmed') {
 					$y++;
-					$ret .= '<tr><td>';
-					$ret .= date_i18n( 'G:i, l (j.m)', strtotime( $r->start ) ) . '</td>';
-					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
 
+					if (in_array(date_i18n( 'l d F', strtotime( $r->start ) ), $upcoming_days_arr) == 0) {
+						array_push($upcoming_days_arr, date_i18n( 'l d F', strtotime( $r->start ) ));
+						$ret .= '<tr>';
+						$ret .= '<td colspan="3" style="font-weight: bold;text-align:center;">';
+						$ret .= date_i18n( 'l d F', strtotime( $r->start ) );
+						$ret .= '</td>';
+						$ret .= '</tr>';
+					}
+					$ret .= '<tr>';
+					// CLIENT NAME
 					$ret .= '<td>';
+					$ret .= $appointments->get_client_name_nolink( $r->ID ) . '</td>';
+					// ORGANISATION NAME
 					// if organisation is not in results grab it from user meta
+					$ret .= '<td>';
 					if ($r->organisation != '') {
 						$ret .= $r->organisation. '</td>';
 					} else {
-						$ret .= $appointments->get_organisation_name( $r->ID );
+						$ret .= $appointments->get_organisation_name( $r->ID ). '</td>';
 					}
-
 					$ret .= '<td>';
-					$ret .= $appointments->get_client_name_nolink( $r->ID ) . '</td>';
+					$ret .= date_i18n( 'F m, Y g:i a', strtotime( $r->start ) ) . '</td>';
+					$ret .= apply_filters('app-shortcode-all_appointments-after_date', '', $r);
 					$ret .= apply_filters('app-shortcode-all_appointments-after_client', '', $r);
-
 					$ret .= apply_filters( 'app_all_appointments_add_cell', '', $r );
 					$ret .= '</tr>';
 				}
@@ -1759,35 +1791,11 @@ class App_Weekly_Summary extends App_Shortcode {
 			$ret .= '<tr><td colspan="'.$colspan.'">'. __('No appointments','appointments'). '</td></tr>';
 
 		$ret .= '</tbody></table>';
-		$ret .= '<button class="btn btn-default" id="print_nextweek"><i class="glyphicon glyphicon-print"></i> Print table</button>';
+		$ret .= '<button class="btn btn-default no-print" onclick="window.print();" id="print_nextweek"><i class="glyphicon glyphicon-print"></i> Print</button>';
 		$ret  = apply_filters( 'app_all_appointments_after_table', $ret, $results );
-		$ret .= '</div>';
-
-			// add print functionality
-		$appointments->add2footer( '
-			function printCurWeek()
-			{
-			   var divToPrint1=document.getElementById("current_week_table");
-			   newWin= window.open("");
-			   newWin.document.write(divToPrint1.outerHTML);
-			   newWin.print();
-			   newWin.close();
-			}
-			function printUpcomingWeek()
-			{
-			   var divToPrint2=document.getElementById("upcoming_week_table");
-			   newWin2= window.open("");
-			   newWin2.document.write(divToPrint2.outerHTML);
-			   newWin2.print();
-			   newWin2.close();
-			}
-			$("#print_curweek").on("click",function(){
-				printCurWeek();
-			});
-			$("#print_nextweek").on("click",function(){
-				printUpcomingWeek();
-			});
-		');
+		$ret .= '</div>'; // end div
+    $ret .= '</div>'; // end tab
+    $ret .= '</div>'; // end tabs container
 
 		return $ret;
 	}
