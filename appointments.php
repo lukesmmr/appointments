@@ -2025,6 +2025,11 @@ class Appointments {
 	function get_monthly_calendar( $timestamp=false, $class='', $long, $widget ) {
 		global $wpdb;
 
+		// Default Timezone setting for CRN New Zealand
+		if ( function_exists('date_default_timezone_set') ) {
+			date_default_timezone_set('NZ');
+		}
+
 		$this->get_lsw();
 
 		$price = $this->get_price( );
