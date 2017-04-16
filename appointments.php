@@ -1448,6 +1448,7 @@ class Appointments {
 
 		global $wpdb;
 
+
 		if ( $this->is_busy( $start,  $end, $this->get_capacity() ) )
 			die( json_encode( array("error"=>apply_filters( 'app_booked_message',__( 'We are sorry, but this time slot is no longer available. Please refresh the page and try another time slot. Thank you.', 'appointments')))));
 
@@ -2025,11 +2026,6 @@ class Appointments {
 	function get_monthly_calendar( $timestamp=false, $class='', $long, $widget ) {
 		global $wpdb;
 
-		// Default Timezone setting for CRN New Zealand
-		if ( function_exists('date_default_timezone_set') ) {
-			date_default_timezone_set('NZ');
-		}
-
 		$this->get_lsw();
 
 		$price = $this->get_price( );
@@ -2067,7 +2063,7 @@ class Appointments {
 			$ret .= '<div class="disabled-warning alert alert-danger">No service provider assigned.</div>';
 		// output availability range warning
 		if (isset( $enableddate->days ) && isset( $_GET["wcalendar"] ) )
-			if ( strtotime($enableddate->days) > time() )
+			if ( strtotime($enableddate->days) > $this->local_time )
 				if ( strtotime($startdate->days) != '' && strtotime($enddate->days) != '' )
 					$ret .= '<div class="disabled-warning alert alert-warning">Bookings for '. date("F",strtotime($startdate->days)) . ' open on <strong>'. date("d/m/Y",strtotime($enableddate->days)) . '</strong></div>';
 				else
@@ -2106,7 +2102,7 @@ class Appointments {
 			if ( isset($disabled->days) )
 				$class_name = 'notpossible app_disabled';
 			// only allow bookings from now matches the date set for bookings to commence
-			else if ( strtotime($enableddate->days) != '' && strtotime($enableddate->days) >= time() )
+			else if ( strtotime($enableddate->days) != '' && strtotime($enableddate->days) >= $this->local_time )
 				$class_name = 'notpossible app_disabled';
 			// Then mark passed days
 			else if ( $this->local_time > $cce )
