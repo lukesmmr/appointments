@@ -1,11 +1,11 @@
 <?php
 /*
-Plugin Name: Appointments Lite
+Plugin Name: Appointments for CRN Aotearoa
 Description: Lets you accept appointments from front end and manage or create them from admin side
 Plugin URI: http://premium.wpmudev.org/project/appointments-plus/
-Version: 1.4.4 Beta
-Author: WPMU DEV
-Author URI: http://premium.wpmudev.org/
+Version: 10.custom_mod
+Author: WPMU DEV (Custom fork by @lukesmmr)
+Author URI: https://github.com/lukesmmr/appointments
 Textdomain: appointments
 WDP ID: 679841
 */
@@ -2091,12 +2091,36 @@ class Appointments {
 			$dow = (int)date('w', strtotime($date));
 			$ccs = strtotime("{$date} 00:00");
 			$cce = strtotime("{$date} 23:59");
-			$cce_day_after = strtotime("{$date} 23:59") - 86400;
+			$cce_day_before = strtotime("{$date} 23:59") - 86400;
+			$end_date_formatted = date('Y-m-d', strtotime($enddate->days));
+			$end_date_last_hour = strtotime("{$end_date_formatted} 23:59");
+
 
 			if ($this->start_of_week == $dow)
 				$ret .= '</tr><tr>';
 
 			$class_name = '';
+
+			// echo '<pre>ccs: ';
+			// var_dump(date('m/d/Y, H:i:s', $ccs));
+			// echo '</pre>';
+			// echo '<pre>cce: ';
+			// var_dump(date('m/d/Y, H:i:s', $cce));
+			// echo '</pre>';
+			// echo '<pre>start date -> days: ';
+			// var_dump(date('m/d/Y, H:i:s', strtotime($startdate->days) ) );
+			// echo '</pre>';
+			// echo '<pre>not possible after end date: ';
+			// var_dump(date('m/d/Y, H:i:s', $end_date_last_hour) );
+			// echo ' <= (lower/equal) cce day before: ';
+			// var_dump(date('m/d/Y, H:i:s', $cce_day_before));
+			// echo '</pre>';
+			// echo '<pre>end date -> days: ';
+			// var_dump(date('m/d/Y, H:i:s', strtotime($enddate->days) ) );
+			// echo '</pre>';
+			// echo '<pre>capacity: ';
+			// var_dump($capacity);
+			// echo '</pre>';
 
 			// First check if service provider was disabled
 			if ( isset($disabled->days) )
@@ -2111,7 +2135,7 @@ class Appointments {
 			else if ( strtotime($startdate->days) != '' && strtotime($startdate->days) >= $cce  )
 				$class_name = 'notpossible app_before_start_date';
 			// then set before end date
-			else if ( strtotime($enddate->days) != '' && strtotime($enddate->days) <= $cce_day_after )
+			else if ( strtotime($enddate->days) != '' && $end_date_last_hour <= $cce_day_before )
 				$class_name = 'notpossible app_after_end_date';
 			// Then check if this time is blocked
 			else if ( isset( $this->options["app_lower_limit"] ) && $this->options["app_lower_limit"]
@@ -2132,7 +2156,6 @@ class Appointments {
 				$this->is_a_timetable_cell_free = false;
 
 				$time_table .= $this->get_timetable( $ccs, $capacity, $schedule_key );
-
 				// Look if we have at least one cell free from get_timetable function
 				if ( $this->is_a_timetable_cell_free )
 					$class_name = 'free';
@@ -2191,10 +2214,18 @@ class Appointments {
 
 		// We need this only for the first timetable
 		// Otherwise $time will be calculated from $day_start
-		if ( isset( $_GET["wcalendar"] ) )
+		if ( isset( $_GET["wcalendar"] ) ) {
 			$time = $_GET["wcalendar"];
-		else
+			// echo '<pre>WCALENDAR: ';
+			// var_dump(date('m/d/Y, H:i:s', $time));
+			// echo '</pre>';
+		} else {
 			$time = $this->local_time;
+			// echo '<pre>LOCALTIME: ';
+			// var_dump(date('m/d/Y, H:i:s', $time));
+			// echo '</pre>';
+		}
+
 
 		// Are we looking to today?
 		// If today is a working day, shows its free times by default
@@ -2215,9 +2246,23 @@ class Appointments {
 		$start = apply_filters( 'app_schedule_starting_hour', $start );
 		$end = apply_filters( 'app_schedule_ending_hour', $end );
 
+		// echo '<pre>start: ';
+		// var_dump($start);
+		// echo '</pre>';
+		// echo '<pre>end: ';
+		// var_dump($end);
+		// echo '</pre>';
+
 		$first = $start *3600 + $day_start; // Timestamp of the first cell
 		$last = $end *3600 + $day_start; // Timestamp of the last cell
 		$min_step_time = $this->get_min_time() * 60; // Cache min step increment
+
+		// echo '<pre>first: ';
+		// var_dump(date('m/d/Y, H:i:s', $first));
+		// echo '</pre>';
+		// echo '<pre>last: ';
+		// var_dump(date('m/d/Y, H:i:s', $last));
+		// echo '</pre>';
 
 		if (defined('APP_USE_LEGACY_DURATION_CALCULUS') && APP_USE_LEGACY_DURATION_CALCULUS) {
 			$step = $min_step_time; // Timestamp increase interval to one cell ahead
