@@ -1,11 +1,11 @@
 <?php
 /*
-Plugin Name: Appointments Lite
+Plugin Name: Appointments for CRN Aotearoa
 Description: Lets you accept appointments from front end and manage or create them from admin side
 Plugin URI: http://premium.wpmudev.org/project/appointments-plus/
-Version: 1.4.4 Beta
-Author: WPMU DEV
-Author URI: http://premium.wpmudev.org/
+Version: 10.custom_mod
+Author: WPMU DEV (Custom fork by @lukesmmr)
+Author URI: https://github.com/lukesmmr/appointments
 Textdomain: appointments
 WDP ID: 679841
 */
