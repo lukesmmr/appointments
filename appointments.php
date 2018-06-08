@@ -2062,12 +2062,29 @@ class Appointments {
 		if( isset($this->worker) && $this->worker == 0 )
 			$ret .= '<div class="disabled-warning alert alert-danger">No service provider assigned.</div>';
 		// output availability range warning
+
+
+		$enabled_day = strtotime($enableddate->days);
+		$enabled_day_7am = strtotime($enableddate->days)+7*60*60;
+
+		// echo '<pre>Enabled day: ';
+		// var_dump(strftime("%Y-%m-%d %H:%M:%S %a", $enabled_day));				
+		// echo '</pre>';
+		
+		// echo '<pre>Enabled day + 7 hours: ';
+		// var_dump(strftime("%Y-%m-%d %H:%M:%S %a", $enabled_day_7am));				
+		// echo '</pre>';
+		
+		// echo '<pre>Local time: ';
+		// var_dump(strftime("%Y-%m-%d %H:%M:%S %a", $this->local_time));				
+		// echo '</pre>';
+
 		if (isset( $enableddate->days ) && isset( $_GET["wcalendar"] ) )
-			if ( strtotime($enableddate->days) > $this->local_time )
+			if ( $enabled_day_7am > $this->local_time )
 				if ( strtotime($startdate->days) != '' && strtotime($enddate->days) != '' )
-					$ret .= '<div class="disabled-warning alert alert-warning">Bookings for '. date("F",strtotime($startdate->days)) . ' open on <strong>'. date("d/m/Y",strtotime($enableddate->days)) . '</strong></div>';
+					$ret .= '<div class="disabled-warning alert alert-warning">Bookings for '. date("F",strtotime($startdate->days)) . ' open on <strong>'. date("d/m/Y H:i",$enabled_day_7am) . '</strong></div>';
 				else
-					$ret .= '<div class="disabled-warning alert alert-warning">This service will become available for bookings on '. date("d/m/Y",strtotime($enableddate->days)) .'.</div>';
+					$ret .= '<div class="disabled-warning alert alert-warning">This service will become available for bookings on '. date("d/m/Y H:i",$enabled_day_7am) .'.</div>';
 		$ret .= '<div class="app_monthly_schedule_wrapper">';
 
 		$ret .= '<a id="app_schedule">&nbsp;</a>';
@@ -2087,6 +2104,7 @@ class Appointments {
 			$ret .= '<tr>';
 
 		for ($i=1; $i<=$days; $i++) {
+
 			$date = date('Y-m-' . sprintf("%02d", $i), $time);
 			$dow = (int)date('w', strtotime($date));
 			$ccs = strtotime("{$date} 00:00");
@@ -2126,7 +2144,7 @@ class Appointments {
 			if ( isset($disabled->days) )
 				$class_name = 'notpossible app_disabled';
 			// only allow bookings from now matches the date set for bookings to commence
-			else if ( strtotime($enableddate->days) != '' && strtotime($enableddate->days) >= $this->local_time )
+			else if ( $enabled_day_7am != '' && $enabled_day_7am >= $this->local_time )
 				$class_name = 'notpossible app_disabled';
 			// Then mark passed days
 			else if ( $this->local_time > $cce )
