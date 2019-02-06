@@ -2067,17 +2067,14 @@ class Appointments {
 		$enabled_day = strtotime($enableddate->days);
 		$enabled_day_7am = strtotime($enableddate->days)+7*60*60;
 
-		// echo '<pre>Enabled day: ';
-		// var_dump(strftime("%Y-%m-%d %H:%M:%S %a", $enabled_day));				
-		// echo '</pre>';
-		
-		// echo '<pre>Enabled day + 7 hours: ';
-		// var_dump(strftime("%Y-%m-%d %H:%M:%S %a", $enabled_day_7am));				
-		// echo '</pre>';
-		
-		// echo '<pre>Local time: ';
-		// var_dump(strftime("%Y-%m-%d %H:%M:%S %a", $this->local_time));				
-		// echo '</pre>';
+	    if ( defined( 'WP_ENV' ) && WP_ENV === 'development' ) {
+			echo '<pre>';
+				echo 'Booking period start time: ';
+				print_r(strftime("%Y-%m-%d %H:%M:%S %a", $enabled_day_7am));				
+				echo '</br>Local time: ';
+				print_r(strftime("%Y-%m-%d %H:%M:%S %a", $this->local_time));				
+			echo '</pre>';
+		}
 
 		if (isset( $enableddate->days ) && isset( $_GET["wcalendar"] ) )
 			if ( $enabled_day_7am > $this->local_time )
@@ -2113,32 +2110,10 @@ class Appointments {
 			$end_date_formatted = date('Y-m-d', strtotime($enddate->days));
 			$end_date_last_hour = strtotime("{$end_date_formatted} 23:59");
 
-
 			if ($this->start_of_week == $dow)
 				$ret .= '</tr><tr>';
 
 			$class_name = '';
-
-			// echo '<pre>ccs: ';
-			// var_dump(date('m/d/Y, H:i:s', $ccs));
-			// echo '</pre>';
-			// echo '<pre>cce: ';
-			// var_dump(date('m/d/Y, H:i:s', $cce));
-			// echo '</pre>';
-			// echo '<pre>start date -> days: ';
-			// var_dump(date('m/d/Y, H:i:s', strtotime($startdate->days) ) );
-			// echo '</pre>';
-			// echo '<pre>not possible after end date: ';
-			// var_dump(date('m/d/Y, H:i:s', $end_date_last_hour) );
-			// echo ' <= (lower/equal) cce day before: ';
-			// var_dump(date('m/d/Y, H:i:s', $cce_day_before));
-			// echo '</pre>';
-			// echo '<pre>end date -> days: ';
-			// var_dump(date('m/d/Y, H:i:s', strtotime($enddate->days) ) );
-			// echo '</pre>';
-			// echo '<pre>capacity: ';
-			// var_dump($capacity);
-			// echo '</pre>';
 
 			// First check if service provider was disabled
 			if ( isset($disabled->days) )
@@ -2234,16 +2209,9 @@ class Appointments {
 		// Otherwise $time will be calculated from $day_start
 		if ( isset( $_GET["wcalendar"] ) ) {
 			$time = $_GET["wcalendar"];
-			// echo '<pre>WCALENDAR: ';
-			// var_dump(date('m/d/Y, H:i:s', $time));
-			// echo '</pre>';
 		} else {
 			$time = $this->local_time;
-			// echo '<pre>LOCALTIME: ';
-			// var_dump(date('m/d/Y, H:i:s', $time));
-			// echo '</pre>';
 		}
-
 
 		// Are we looking to today?
 		// If today is a working day, shows its free times by default
@@ -2264,23 +2232,9 @@ class Appointments {
 		$start = apply_filters( 'app_schedule_starting_hour', $start );
 		$end = apply_filters( 'app_schedule_ending_hour', $end );
 
-		// echo '<pre>start: ';
-		// var_dump($start);
-		// echo '</pre>';
-		// echo '<pre>end: ';
-		// var_dump($end);
-		// echo '</pre>';
-
 		$first = $start *3600 + $day_start; // Timestamp of the first cell
 		$last = $end *3600 + $day_start; // Timestamp of the last cell
 		$min_step_time = $this->get_min_time() * 60; // Cache min step increment
-
-		// echo '<pre>first: ';
-		// var_dump(date('m/d/Y, H:i:s', $first));
-		// echo '</pre>';
-		// echo '<pre>last: ';
-		// var_dump(date('m/d/Y, H:i:s', $last));
-		// echo '</pre>';
 
 		if (defined('APP_USE_LEGACY_DURATION_CALCULUS') && APP_USE_LEGACY_DURATION_CALCULUS) {
 			$step = $min_step_time; // Timestamp increase interval to one cell ahead
@@ -2313,8 +2267,8 @@ class Appointments {
 			$ccs = apply_filters('app_ccs', $t); 				// Current cell starts
 			$cce = apply_filters('app_cce', $ccs + $step);		// Current cell ends
 
-// Fix for service durations calculus and workhours start conflict with different duration services
-// Example: http://premium.wpmudev.org/forums/topic/problem-with-time-slots-not-properly-allocating-free-time
+		// Fix for service durations calculus and workhours start conflict with different duration services
+		// Example: http://premium.wpmudev.org/forums/topic/problem-with-time-slots-not-properly-allocating-free-time
 			if (!empty($start_unpacked_days) && !(defined('APP_USE_LEGACY_DURATION_CALCULUS') && APP_USE_LEGACY_DURATION_CALCULUS)) {
 				$this_day_key = date('l', $t);
 				if (!empty($start_unpacked_days[$this_day_key])) {
@@ -2330,8 +2284,8 @@ class Appointments {
 					//if ($cce > $this_day_closing_timestamp) continue;
 				}
 			}
-// Breaks are not behaving like paddings, which is to be expected.
-// This fix (2) will force them to behave more like paddings
+			// Breaks are not behaving like paddings, which is to be expected.
+			// This fix (2) will force them to behave more like paddings
 			if (!empty($break_times[$this_day_key]['active']) && defined('APP_BREAK_TIMES_PADDING_CALCULUS') && APP_BREAK_TIMES_PADDING_CALCULUS) {
 				$active = $break_times[$this_day_key]['active'];
 				$break_starts = $break_times[$this_day_key]['start'];
@@ -2359,7 +2313,7 @@ class Appointments {
 					}
 				}
 			}
-// End fixes area
+			// End fixes area
 
 			$is_busy = $this->is_busy( $ccs, $cce, $capacity );
 			$title = apply_filters('app-schedule_cell-title', date_i18n($this->datetime_format, $ccs), $is_busy, $ccs, $cce, $schedule_key);
@@ -2384,6 +2338,9 @@ class Appointments {
 			// Then check if we have enough time to fulfill this app
 			else if ( !$this->is_service_possible( $ccs, $cce, $capacity ) )
 				$class_name = 'notpossible service_notpossible';
+			// Then check if user has at least 3 bookings on mornings the same week
+			else if ( !$this->has_same_week_morning_bookings( $ccs, $cce, $this->worker) )
+				$class_name = 'notpossible service_has_same_week_morning_booking';
 			// Then check if user already has booking the same day
 			else if ( !$this->has_same_day_booking( $ccs, $cce, $this->worker) )
 				$class_name = 'notpossible service_has_sameday_booking';
@@ -2763,14 +2720,93 @@ class Appointments {
 		if ( !$prefix )
 			return;
 		$user = wp_get_current_user();
-    foreach( $wpdb->get_results( 'SELECT * FROM '.$prefix.'app_appointments WHERE worker = '.$worker.' AND user = '.$user->ID) as $key => $result) {
+    	foreach( $wpdb->get_results( 'SELECT * FROM '.$prefix.'app_appointments WHERE worker = '.$worker.' AND user = '.$user->ID) as $key => $result) {
 			// check if there's a pending or confirmed appointment on the given booking day
 			if ( date('m/d/Y', $ccs) == date('m/d/Y', strtotime($result->start) ) && $result->status != 'removed' ) {
 				return false;
 			}
 		}
 		return true;
+	}
 
+	/**
+	 * Check if a user already has a 3 morning bookings booking that same week
+	 * @return bool
+	 * @since 1.2.2
+	 */
+	function has_same_week_morning_bookings( $ccs, $cse, $worker ) {
+		global $wpdb;
+
+		if ( !method_exists( $wpdb, 'get_blog_prefix' ) )
+			return;
+		$prefix = $wpdb->get_blog_prefix( $blog_id );
+		if ( !$prefix )
+			return;
+
+		// current logged in user
+		$user = wp_get_current_user();
+
+		// match array
+		$loopmatch = array();
+
+		// conditional vars
+		$time_slot_week = date('W', $ccs);
+		$time_slot_start_hour = date('H', $ccs);
+		$time_slot_year = date('Y', $ccs );
+
+		// loop over booking data and find matches
+    	foreach( $wpdb->get_results( 'SELECT * FROM '.$prefix.'app_appointments WHERE worker = '.$worker.' AND user = '.$user->ID) as $key => $result) {
+			
+			// result comparison conditionals
+			$app_week = date('W', strtotime($result->start) );
+			$app_start_hour = date('H', strtotime($result->start));
+			$app_year = date('Y', strtotime($result->start) );
+			// morning time slot limit is noon 
+			$time_limit = 12;
+
+			/*
+			To block all morning slots for a particular week the conditional
+			needs to satisfy the following:
+			- time slot and appointment week number match ('W')
+			- time slot and appointment year  match ('Y')
+			- time slot and appointment are both before noon ('H')
+			*/
+			if ( 
+				($time_slot_week === $app_week) &&					
+				($time_slot_year === $app_year) &&				
+				($time_slot_start_hour < $time_limit && $app_start_hour < $time_limit)
+			) {
+				array_push($loopmatch, $result);
+			}
+		}
+
+		// create a counter per matched
+		$match_counter = 0;
+		if ( is_array($loopmatch) && !empty($loopmatch) ) {
+			foreach($loopmatch as $match) {
+				$match_week 		= date('W', strtotime($match->start));
+				$match_start_hour 	= date('H', strtotime($match->start));
+				$match_year 		= date('Y', strtotime($match->start));
+				if (
+					($time_slot_week === $match_week) &&					
+					($time_slot_year === $match_year) &&				
+					($time_slot_start_hour < $time_limit && $match_start_hour < $time_limit)
+				) {
+					// count up for weekly matches
+					$match_counter++;
+				}
+			}
+		}
+
+		/* 
+		Restrict morning slots if there are
+		over 3 matches of existing morning
+		bookings for a particular week
+		*/ 
+		if ($match_counter >= 3) {
+			return false;
+		}
+		return true;
 	}
 
 	/**

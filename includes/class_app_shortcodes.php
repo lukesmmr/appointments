@@ -385,12 +385,12 @@ class App_Shortcode_MonthlySchedule extends App_Shortcode {
 	public function __construct () {
 		$this->_defaults = array(
 			'title' => array(
-				'value' => __('<h3>Our schedule for START</h3>', 'appointments'),
+				'value' => __('<h2>Our schedule for <span style="text-decoration: underline;">START</span></h2>', 'appointments'),
 				'help' => __('Text that will be displayed as the schedule title. Placeholders START and END will be automatically replaced by their real values.', 'appointments'),
 				'example' => __('Our schedule for START', 'appointments'),
 			),
 			'logged' => array(
-				'value' => __('Click a free day to apply for an appointment (limited to 1 appointment per day).', 'appointments'),
+				'value' => __('Click a free day to apply for an appointment.<br/><em>Each group is limited to 1 appointment per day and 3 early (before 12h) bookings per week.</em>', 'appointments'),
 				'help' => __('Text that will be displayed after the title only to the clients who are logged in or you don\'t require a login.', 'appointments'),
 				'example' => __('Click a free day to apply for an appointment.', 'appointments'),
 			),
@@ -1187,7 +1187,7 @@ class App_Shortcode_Services extends App_Shortcode {
 
 		/*
 		MODIFICATIONS / @lukesmmr Nov2016
-		build array with workers, services and service start dates to buil wcalendar url call for loading the calendar in the correct month when the service provider allows bookings for.
+		build array with workers, services and service start dates to build wcalendar url call for loading the calendar in the correct month when the service provider allows bookings for.
 		might break the app if multiple services are assigned to the same worker/service provider
 		*/
 		$workers = $appointments->get_workers( $order_by );
